@@ -7,12 +7,11 @@ module init
 
   private
 
-  public :: init__set_param
-!!$  public :: init__set_param, init__inject, init__relocate
+  public :: init__set_param, init__inject, init__relocate
 
   integer, public, parameter   :: nroot=0
   integer, allocatable, public :: np2(:,:,:)
-  integer, public              :: itmax, it0, intvl1, intvl3, intvl4
+  integer, public              :: itmax, it0, intvl1, intvl2, intvl3
   real(8), public              :: delx, delt, gfac
   real(8), public              :: c, q(nsp), r(nsp)
   real(8), allocatable, public :: uf(:,:,:,:)
@@ -27,7 +26,7 @@ contains
   
   subroutine init__set_param
 
-!!$    use fio, only : fio__input, fio__param
+    use fio, only : fio__input, fio__param
 
     integer              :: n
     integer, allocatable :: seed(:)
@@ -65,12 +64,11 @@ contains
 !***********   End of    *************!
 
 !*********************************************************************
-!   time0   : start time (if time0 < 0, initial data from input.f)
 !   itmax   : number of iteration
 !   it0     : base count
 !   intvl1  : storage interval for particles & fields
-!   intvl3  : interval for injecting particles
-!   intvl4  : interval for updating physical region in x
+!   intvl2  : interval for injecting particles
+!   intvl3  : interval for updating physical region in x
 !   dir     : directory name for data output
 !   file??  : output file name for unit number ??
 !           :  9 - initial parameters
@@ -78,18 +76,18 @@ contains
 !           : 11 - for starting from saved data
 !   gfac    : implicit factor
 !             gfac < 0.5 : unstable
-!             gfac = 0.5 : no implicit
-!             gfac = 1.0 : full implicit
+!             gfac = 0.5 : Crank-Nicolson (2nd order)
+!             gfac = 1.0 : Backward Euler (1st order)
 !*********************************************************************
     pi     = 4.0*atan(1.0)
-    itmax  = 80000
-    intvl1 = 5000
-    intvl3 = 1
-    intvl4 = 100000
-    dir    = '../../dat/shock/test/'          !for pc
-!!$    dir    = './pic/shock/run2/'              !for hx600@nagoya, xt@nao
-!!$    dir    = '/large/m/m082/pic/shock/run1/'   !for fx1@jaxa
-!!$    dir    = '/group/gc30/c30002/pic/shock/run1b/'   !for oakleaf-fx@u-tokyo
+    itmax  = 50
+    intvl1 = 40000
+    intvl2 = 1
+    intvl3 = 50000
+    !for pc
+!!$    dir    = '../../dat/shock/test/'
+    !for oakleaf-fx@u-tokyo
+    dir    = '/group/gc30/c30002/pic3d/shock/test/' 
     file9  = 'init_param.dat'
     gfac   = 0.505
     it0    = 0
@@ -128,7 +126,7 @@ contains
     rgi = rge*dsqrt(r(1)/r(2))/dsqrt(rtemp)
     vte = rge*fge
     vti = vte*dsqrt(r(2)/r(1))/dsqrt(rtemp)
-    v0  = +10.0*va
+    v0  = -10.0*va
     u0  = v0/dsqrt(1.-(v0/c)**2)
     gam0 = dsqrt(1.+u0**2/c**2)
 
@@ -155,22 +153,24 @@ contains
     !Magnetic field strength
     b0 = fgi*r(1)*c/q(1)
 
-!!$    if(it0 /= 0)then
-!!$       !start from the past calculation
-!!$       write(file11,'(a,i3.3,a)')'9999999_rank=',nrank,'.dat'
-!!$       call fio__input(up,uf,np2,nxs,nxe,c,q,r,delt,delx,it0,          &
-!!$                       np,nxgs,nxge,nygs,nyge,nys,nye,nsp,nproc,nrank, &
-!!$                       dir,file11)
-!!$       return
-!!$    endif
-!!$
+    if(it0 /= 0)then
+       !start from the past calculation
+       write(file11,'(a,i3.3,a)')'0000025_rank=',nrank,'.dat'
+       call fio__input(up,uf,np2,c,q,r,delt,delx,it0,nxs,nxe,                &
+                       nxgs,nxge,nygs,nyge,nzgs,nzge,nys,nye,nzs,nze,np,nsp, &
+                       nproc,nproc_i,nproc_j,nproc_k,nrank,                  &
+                       dir,file11)
+       return
+    endif
+
     call init__loading
-!!$    call fio__param(np,nsp,np2,                             &
-!!$                    nxgs,nxge,nygs,nyge,nys,nye,            &
-!!$                    c,q,r,n0,0.5*r(1)*vti**2,rtemp,fpe,fge, &
-!!$                    ldb,delt,delx,dir,file9,                &
-!!$                    nroot,nrank)
-!!$
+
+    if(nrank == nroot) &
+         call fio__param(nxgs,nxge,nygs,nyge,nzgs,nzge,nys,nye,nzs,nze, &
+                         np,nsp,np2,                                    &
+                         c,q,r,n0,0.5*r(1)*vti**2,rtemp,fpe,fge,        &
+                         ldb,delt,delx,dir,file9)
+
   end subroutine init__set_param
 
 
@@ -187,8 +187,8 @@ contains
     do j=nys-2,nye+2
     do i=nxgs-2,nxge+2
        uf(1,i,j,k) = 0.0D0
-       uf(2,i,j,k) = b0
-       uf(3,i,j,k) = 0.0D0
+       uf(2,i,j,k) = 0.0D0
+       uf(3,i,j,k) = b0
        uf(4,i,j,k) = 0.0
        uf(5,i,j,k) = +v0*uf(3,i,j,k)/c
        uf(6,i,j,k) = -v0*uf(2,i,j,k)/c
@@ -277,219 +277,242 @@ contains
   end subroutine init__loading
 
 
-!!$  subroutine init__relocate
-!!$
-!!$    use boundary, only : boundary__field
-!!$!$  use omp_lib
-!!$
-!!$    integer :: dn, isp, j, ii, ii2 ,ii3
-!!$    real(8) :: aa, bb, cc, sd, gamp
-!!$
-!!$!    if(nxs==nxgs) return
-!!$    if(nxe==nxge) return
-!!$
-!!$!    nxs  = nxs-1
-!!$    nxe  = nxe+1
-!!$
-!!$    dn = n0
-!!$
-!!$    !particle position
-!!$!$OMP PARALLEL DO PRIVATE(ii,ii2,ii3,j,aa)
-!!$    do j=nys,nye
-!!$       do ii=1,dn
-!!$          ii2 = np2(j,1)+ii
-!!$          ii3 = np2(j,2)+ii
-!!$
-!!$!          up(1,ii2,j,1) = nxs*delx+delx*ii/(dn+1)
-!!$          up(1,ii2,j,1) = (nxe-1)*delx+delx*ii/(dn+1)
-!!$          up(1,ii3,j,2) = up(1,ii2,j,1)
-!!$
-!!$          aa = 0.0D0
-!!$          do while(aa==1.D0)
-!!$             call random_number(aa)
-!!$          enddo
-!!$
-!!$          up(2,ii2,j,1) = dble(j)*delx+delx*aa
-!!$          up(2,ii3,j,2) = up(2,ii2,j,1)
-!!$       enddo
-!!$    enddo
-!!$!$OMP END PARALLEL DO
-!!$
-!!$    !velocity
-!!$    !Maxwellian distribution
-!!$    do isp=1,nsp
-!!$       if(isp == 1) then 
-!!$          sd = vti/sqrt(2.)
-!!$          gamp = dsqrt(1.D0+sd*sd/(c*c))
-!!$       endif
-!!$       if(isp == 2) then
-!!$          sd = vte/sqrt(2.)
-!!$          gamp = dsqrt(1.D0+sd*sd/(c*c))
-!!$       endif
-!!$
-!!$!$OMP PARALLEL DO PRIVATE(ii,j,aa,bb,cc)
-!!$       do j=nys,nye
-!!$          do ii=np2(j,isp)+1,np2(j,isp)+dn
-!!$
-!!$             aa = 0.0D0
-!!$             do while(aa==0.D0)
-!!$                call random_number(aa)
-!!$             enddo
-!!$             call random_number(bb)
-!!$             call random_number(cc)
-!!$             
-!!$             up(3,ii,j,isp) = sd*dsqrt(-2.*dlog(aa))*(2.*bb-1)
-!!$             up(4,ii,j,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*cos(2.*pi*cc)
-!!$             up(5,ii,j,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*sin(2.*pi*cc)
-!!$
-!!$             call random_number(cc)
-!!$
-!!$             if(up(3,ii,j,isp)*v0 >= 0.)then
-!!$                up(3,ii,j,isp) = (+up(3,ii,j,isp)+v0*gamp)*gam0
-!!$             else
-!!$                if(cc < (-v0*up(3,ii,j,isp)/gamp))then
-!!$                   up(3,ii,j,isp) = (-up(3,ii,j,isp)+v0*gamp)*gam0
-!!$                else
-!!$                   up(3,ii,j,isp) = (+up(3,ii,j,isp)+v0*gamp)*gam0
-!!$                endif
-!!$             endif
-!!$          enddo
-!!$       enddo
-!!$!$OMP END PARALLEL DO
-!!$
-!!$!$OMP PARALLEL WORKSHARE
-!!$       np2(nys:nye,isp) = np2(nys:nye,isp)+dn
-!!$!$OMP END PARALLEL WORKSHARE
-!!$
-!!$    enddo
-!!$
-!!$!$OMP PARALLEL DO PRIVATE(j)
-!!$    do j=nys,nye
-!!$       uf(1,nxe-1,j) = 0.0D0
-!!$       uf(2,nxe-1,j) = b0
-!!$       uf(3,nxe-1,j) = 0.0D0
-!!$       uf(4,nxe-1,j) = 0.0D0
-!!$       uf(5,nxe-1,j) = v0*uf(3,nxe-1,j)/c
-!!$       uf(6,nxe-1,j) = -v0*uf(2,nxe-1,j)/c
-!!$       uf(2,nxe,j)   = b0
-!!$       uf(3,nxe,j)   = 0.0D0
-!!$       uf(4,nxe,j)   = 0.0D0
-!!$    enddo
-!!$!$OMP END PARALLEL DO
-!!$
-!!$    call boundary__field(uf,                        &
-!!$                         nxgs,nxge,nxs,nxe,nys,nye, &
-!!$                         nup,ndown,mnpr,nstat,ncomw,nerr)
-!!$
-!!$  end subroutine init__relocate
-!!$
-!!$
-!!$  subroutine init__inject
-!!$
-!!$    use boundary, only : boundary__field
-!!$
-!!$    integer :: isp, ii, ii2, ii3, j, dn
-!!$    real(8) :: sd, aa, bb, cc, dx, fac, gamp
-!!$
-!!$    !Inject particles in x=nxe-v0*dt~nxe*dt
-!!$
-!!$    dx  = v0*delt*intvl3/delx
-!!$    dn  = abs(n0*dx)
-!!$    fac = (dn)/(0.30+dn)
-!!$
-!!$!$OMP PARALLEL DO PRIVATE(ii,ii2,ii3,j,aa)
-!!$    do j=nys,nye
-!!$       do ii=1,dn
-!!$          ii2 = np2(j,1)+ii
-!!$          ii3 = np2(j,2)+ii
-!!$
-!!$          up(1,ii2,j,1) = nxs*delx+dx*ii/(dn+1)
-!!$!          up(1,ii2,j,1) = nxe*delx+dx*(dn-ii+1)/(dn+1)
-!!$          up(1,ii3,j,2) = up(1,ii2,j,1)
-!!$
-!!$          aa = 0.0D0
-!!$          do while(aa==1.D0)
-!!$             call random_number(aa)
-!!$          enddo
-!!$
-!!$          up(2,ii2,j,1) = dble(j)*delx+delx*aa
-!!$          up(2,ii3,j,2) = up(2,ii2,j,1)
-!!$       enddo
-!!$    enddo
-!!$!$OMP END PARALLEL DO
-!!$
-!!$    !velocity
-!!$    !Maxwellian distribution
-!!$    do isp=1,nsp
-!!$       if(isp == 1) then 
-!!$          sd = vti/dsqrt(2.0D0)/fac
-!!$          gamp = dsqrt(1.D0+sd*sd/(c*c))
-!!$       endif
-!!$       if(isp == 2) then
-!!$          sd = vte/dsqrt(2.0D0)/fac
-!!$          gamp = dsqrt(1.D0+sd*sd/(c*c))
-!!$       endif
-!!$
-!!$!$OMP PARALLEL DO PRIVATE(ii,j,aa,bb,cc)
-!!$       do j=nys,nye
-!!$          do ii=np2(j,isp)+1,np2(j,isp)+dn
-!!$
-!!$             aa = 0.0D0
-!!$             do while(aa==0.D0)
-!!$                call random_number(aa)
-!!$             enddo
-!!$             call random_number(bb)
-!!$             call random_number(cc)
-!!$
-!!$             up(3,ii,j,isp) = sd*dsqrt(-2.*dlog(aa))*(2.*bb-1)
-!!$             up(4,ii,j,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*cos(2.*pi*cc)
-!!$             up(5,ii,j,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*sin(2.*pi*cc)
-!!$
-!!$             call random_number(cc)
-!!$
-!!$             if(up(3,ii,j,isp)*v0 >= 0.)then
-!!$                up(3,ii,j,isp) = (+up(3,ii,j,isp)+v0*gamp)*gam0
-!!$             else
-!!$                if(cc < (-v0*up(3,ii,j,isp)/gamp))then
-!!$                   up(3,ii,j,isp) = (-up(3,ii,j,isp)+v0*gamp)*gam0
-!!$                else
-!!$                   up(3,ii,j,isp) = (+up(3,ii,j,isp)+v0*gamp)*gam0
-!!$                endif
-!!$             endif
-!!$          enddo
-!!$       enddo
-!!$!$OMP END PARALLEL DO
-!!$    enddo
-!!$
-!!$    do isp=1,nsp
-!!$!$OMP PARALLEL DO PRIVATE(j)
-!!$       do j=nys,nye
-!!$          np2(j,isp) = np2(j,isp)+dn
-!!$       enddo
-!!$!$OMP END PARALLEL DO
-!!$    enddo
-!!$
-!!$    !set Ex and Bz
-!!$!$OMP PARALLEL DO PRIVATE(j)
-!!$    do j=nys,nye
-!!$       uf(2,nxs,j)   = b0
-!!$       uf(3,nxs,j)   = 0.D0
-!!$       uf(5,nxs,j)   = v0*uf(3,nxs,j)/c
-!!$       uf(6,nxs,j)   = -v0*uf(2,nxs,j)/c
-!!$
-!!$       uf(2,nxs+1,j) = b0
-!!$       uf(3,nxs+1,j) = 0.D0
-!!$ !      uf(3,nxe-1,j) = b0
-!!$ !      uf(5,nxe-1,j) = v0*b0/c
-!!$ !      uf(3,nxe,j)   = b0
-!!$    enddo
-!!$!$OMP END PARALLEL DO
-!!$
-!!$    call boundary__field(uf,                        &
-!!$                         nxgs,nxge,nxs,nxe,nys,nye, &
-!!$                         nup,ndown,mnpr,nstat,ncomw,nerr)
-!!$
-!!$  end subroutine init__inject
+  subroutine init__relocate
+
+    use boundary, only : boundary__field
+!$  use omp_lib
+
+    integer :: dn, isp, j, k, ii, ii2 ,ii3
+    real(8) :: aa, bb, cc, sd, gamp
+
+!    if(nxs==nxgs) return
+    if(nxe==nxge) return
+
+!    nxs  = nxs-1
+    nxe  = nxe+1
+
+    dn = n0
+
+    !particle position
+!$OMP PARALLEL DO PRIVATE(ii,ii2,ii3,j,k,aa)
+    do k=nzs,nze
+    do j=nys,nye
+       do ii=1,dn
+          ii2 = np2(j,k,1)+ii
+          ii3 = np2(j,k,2)+ii
+
+!          up(1,ii2,j,k,1) = nxs*delx+delx*ii/(dn+1)
+          up(1,ii2,j,k,1) = (nxe-1)*delx+delx*ii/(dn+1)
+          up(1,ii3,j,k,2) = up(1,ii2,j,k,1)
+
+          aa = 0.0D0
+          do while(aa==1.D0)
+             call random_number(aa)
+          enddo
+          up(2,ii2,j,k,1) = dble(j)*delx+delx*aa
+          up(2,ii3,j,k,2) = up(2,ii2,j,k,1)
+
+          aa = 0.0D0
+          do while(aa==1.D0)
+             call random_number(aa)
+          enddo
+          up(3,ii2,j,k,1) = dble(k)*delx+delx*aa
+          up(3,ii3,j,k,2) = up(3,ii2,j,k,1)
+       enddo
+    enddo
+    enddo
+!$OMP END PARALLEL DO
+
+    !velocity
+    !Maxwellian distribution
+    do isp=1,nsp
+       if(isp == 1) then 
+          sd = vti/sqrt(2.)
+          gamp = dsqrt(1.D0+sd*sd/(c*c))
+       endif
+       if(isp == 2) then
+          sd = vte/sqrt(2.)
+          gamp = dsqrt(1.D0+sd*sd/(c*c))
+       endif
+
+!$OMP PARALLEL DO PRIVATE(ii,j,k,aa,bb,cc)
+       do k=nzs,nze
+       do j=nys,nye
+          do ii=np2(j,k,isp)+1,np2(j,k,isp)+dn
+
+             aa = 0.0D0
+             do while(aa==0.D0)
+                call random_number(aa)
+             enddo
+             call random_number(bb)
+             call random_number(cc)
+             
+             up(4,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*(2.*bb-1)
+             up(5,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*cos(2.*pi*cc)
+             up(6,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*sin(2.*pi*cc)
+
+             call random_number(cc)
+
+             if(up(4,ii,j,k,isp)*v0 >= 0.)then
+                up(4,ii,j,k,isp) = (+up(4,ii,j,k,isp)+v0*gamp)*gam0
+             else
+                if(cc < (-v0*up(4,ii,j,k,isp)/gamp))then
+                   up(4,ii,j,k,isp) = (-up(4,ii,j,k,isp)+v0*gamp)*gam0
+                else
+                   up(4,ii,j,k,isp) = (+up(4,ii,j,k,isp)+v0*gamp)*gam0
+                endif
+             endif
+          enddo
+       enddo
+       enddo
+!$OMP END PARALLEL DO
+
+!$OMP PARALLEL WORKSHARE
+       np2(nys:nye,nzs:nze,isp) = np2(nys:nye,nzs:nze,isp)+dn
+!$OMP END PARALLEL WORKSHARE
+
+    enddo
+
+!$OMP PARALLEL DO PRIVATE(j,k)
+    do k=nzs,nze
+    do j=nys,nye
+       uf(2,nxe-1,j,k) = 0.D0
+       uf(3,nxe-1,j,k) = b0
+
+       uf(2,nxe,j,k) = 0.0D0
+       uf(3,nxe,j,k) = b0
+       uf(5,nxe,j,k) = +v0*uf(3,nxe,j,k)/c
+       uf(6,nxe,j,k) = -v0*uf(2,nxe,j,k)/c
+    enddo
+    enddo
+!$OMP END PARALLEL DO
+
+    call boundary__field(uf,                                &
+                         nxgs,nxge,nxs,nxe,nys,nye,nzs,nze, &
+                         jup,jdown,kup,kdown,mnpr,nstat,ncomw,nerr)
+
+  end subroutine init__relocate
+
+
+  subroutine init__inject
+
+    use boundary, only : boundary__field
+
+    integer :: isp, ii, ii2, ii3, j, k, dn
+    real(8) :: sd, aa, bb, cc, dx, fac, gamp
+
+    !Inject particles in x=nxe-v0*dt~nxe*dt
+
+    dx  = v0*delt*intvl2/delx
+    dn  = abs(n0*dx)
+    fac = (dn)/(0.30+dn)
+
+!$OMP PARALLEL DO PRIVATE(ii,ii2,ii3,j,k,aa)
+    do k=nzs,nze
+    do j=nys,nye
+       do ii=1,dn
+          ii2 = np2(j,k,1)+ii
+          ii3 = np2(j,k,2)+ii
+
+!!$          up(1,ii2,j,k,1) = nxs*delx+dx*ii/(dn+1)
+          up(1,ii2,j,k,1) = nxe*delx+dx*(dn-ii+1)/(dn+1)
+          up(1,ii3,j,k,2) = up(1,ii2,j,k,1)
+
+          aa = 0.0D0
+          do while(aa==1.D0)
+             call random_number(aa)
+          enddo
+
+          up(2,ii2,j,k,1) = dble(j)*delx+delx*aa
+          up(2,ii3,j,k,2) = up(2,ii2,j,k,1)
+
+          aa = 0.0D0
+          do while(aa==1.D0)
+             call random_number(aa)
+          enddo
+
+          up(3,ii2,j,k,1) = dble(k)*delx+delx*aa
+          up(3,ii3,j,k,2) = up(3,ii2,j,k,1)
+       enddo
+    enddo
+    enddo
+!$OMP END PARALLEL DO
+
+    !velocity
+    !Maxwellian distribution
+    do isp=1,nsp
+       if(isp == 1) then 
+          sd = vti/dsqrt(2.0D0)/fac
+          gamp = dsqrt(1.D0+sd*sd/(c*c))
+       endif
+       if(isp == 2) then
+          sd = vte/dsqrt(2.0D0)/fac
+          gamp = dsqrt(1.D0+sd*sd/(c*c))
+       endif
+
+!$OMP PARALLEL DO PRIVATE(ii,j,k,aa,bb,cc)
+       do k=nzs,nze
+       do j=nys,nye
+          do ii=np2(j,k,isp)+1,np2(j,k,isp)+dn
+
+             aa = 0.0D0
+             do while(aa==0.D0)
+                call random_number(aa)
+             enddo
+             call random_number(bb)
+             call random_number(cc)
+
+             up(4,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*(2.*bb-1)
+             up(5,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*cos(2.*pi*cc)
+             up(6,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*sin(2.*pi*cc)
+
+             call random_number(cc)
+
+             if(up(4,ii,j,k,isp)*v0 >= 0.)then
+                up(4,ii,j,k,isp) = (+up(4,ii,j,k,isp)+v0*gamp)*gam0
+             else
+                if(cc < (-v0*up(4,ii,j,k,isp)/gamp))then
+                   up(4,ii,j,k,isp) = (-up(4,ii,j,k,isp)+v0*gamp)*gam0
+                else
+                   up(4,ii,j,k,isp) = (+up(4,ii,j,k,isp)+v0*gamp)*gam0
+                endif
+             endif
+          enddo
+       enddo
+       enddo
+!$OMP END PARALLEL DO
+    enddo
+
+    do isp=1,nsp
+!$OMP PARALLEL DO PRIVATE(j,k)
+       do k=nzs,nze
+       do j=nys,nye
+          np2(j,k,isp) = np2(j,k,isp)+dn
+       enddo
+       enddo
+!$OMP END PARALLEL DO
+    enddo
+
+    !set Ex and Bz
+!$OMP PARALLEL DO PRIVATE(j,k)
+    do k=nzs,nze
+    do j=nys,nye
+       uf(2,nxe-1,j,k) = 0.D0
+       uf(3,nxe-1,j,k) = b0
+
+       uf(2,nxe,j,k) = 0.D0
+       uf(3,nxe,j,k) = b0
+       uf(5,nxe,j,k) = v0*uf(3,nxe,j,k)/c
+       uf(6,nxe,j,k) = -v0*uf(2,nxe,j,k)/c
+    enddo
+    enddo
+!$OMP END PARALLEL DO
+
+    call boundary__field(uf,                                &
+                         nxgs,nxge,nxs,nxe,nys,nye,nzs,nze, &
+                         jup,jdown,kup,kdown,mnpr,nstat,ncomw,nerr)
+
+  end subroutine init__inject
 
 
 end module init

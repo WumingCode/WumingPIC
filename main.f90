@@ -3,10 +3,11 @@ program main
   use const
   use mpi_set
   use init
-!!$  use boundary
-!!$  use fio
-!!$  use particle
-!!$  use field
+  use boundary
+  use fio
+  use particle
+  use field
+
   implicit none
 
   integer :: it=0
@@ -27,50 +28,63 @@ program main
 !**********************************************************************c
 
   !**** Maximum elapse time ****!o
-  etlim = 48.*60.*60.-5.*60.
+!!$  etlim = 48.*60.*60.-5.*60.
 !!$  etlim = 20000.-20.*60.
   !Test runs
-!!$  etlim = 15.*60.
+  etlim = 15.*60.
 !!$  !*****************************!
-!!$  etime0 = omp_get_wtime()
+
+  etime0 = omp_get_wtime()
 
   call init__set_param
-!!$  call MPI_BCAST(etime0,1,mnpr,nroot,ncomw,nerr)
-!!$
-!!$  loop: do it=1,itmax-it0
-!!$
-!!$     if(nrank == nroot) etime = omp_get_wtime()
-!!$
-!!$     call MPI_BCAST(etime,1,mnpr,nroot,ncomw,nerr)
-!!$
-!!$     if(etime-etime0 >= etlim) then
-!!$        call fio__output(up,uf,np,nxgs,nxge,nygs,nyge,nxs,nxe,nys,nye,nsp,np2,nproc,nrank, &
-!!$                         c,q,r,delt,delx,it-1,it0,dir,.true.)
-!!$        if(nrank == nroot) write(*,*) '*** elapse time over ***',it,etime-etime0
-!!$        exit loop
-!!$     endif
-!!$
-!!$     call particle__solv(gp,up,uf,                     &
-!!$                         np,nsp,np2,nxgs,nxge,nys,nye, &
-!!$                         c,q,r,delt,delx)
-!!$     call field__fdtd_i(uf,up,gp,                             &
-!!$                        np,nsp,np2,nxgs,nxge,nxs,nxe,nys,nye, &
-!!$                        q,c,delx,delt,gfac,                   &
-!!$                        nup,ndown,mnpr,opsum,nstat,ncomw,nerr)
-!!$     call boundary__particle(up,                                   &
-!!$                             np,nsp,np2,nygs,nyge,nxs,nxe,nys,nye, &
-!!$                             nup,ndown,nstat,mnpi,mnpr,ncomw,nerr)
-!!$
-!!$     if(mod(it+it0,intvl3) == 0) call init__inject
-!!$
-!!$     if(mod(it+it0,intvl1) == 0)                                                             &
-!!$          call fio__output(up,uf,np,nxgs,nxge,nygs,nyge,nxs,nxe,nys,nye,nsp,np2,nproc,nrank, &
-!!$                           c,q,r,delt,delx,it,it0,dir,.false.)
-!!$     if(mod(it+it0,intvl4) == 0) call init__relocate
-!!$
-!!$  enddo loop
-!!$
-!!$  call MPI_FINALIZE(nerr)
+  call MPI_BCAST(etime0,1,mnpr,nroot,ncomw,nerr)
+
+  loop: do it=1,itmax-it0
+
+     if(nrank == nroot) etime = omp_get_wtime()
+!!$     if(nrank == nroot) write(*,*)it
+
+     call MPI_BCAST(etime,1,mnpr,nroot,ncomw,nerr)
+
+     if(etime-etime0 >= etlim) then
+        call fio__output(.true.,                                                &
+                         nxgs,nxge,nygs,nyge,nzgs,nzge,nxs,nxe,nys,nye,nzs,nze, &
+                         np,nsp,np2,it,it0,                                     &
+                         nproc,nproc_i,nproc_j,nproc_k,nrank,                   &
+                         c,q,r,delt,delx,dir,                                   &
+                         up,uf)
+        if(nrank == nroot) write(*,*) '*** elapse time over ***',it,etime-etime0
+        exit loop
+     endif
+
+     call particle__solv(gp,                                   &
+                         nxgs,nxge,nys,nye,nzs,nze,np,nsp,np2, &
+                         c,q,r,delt,delx,                      &
+                         up,uf)
+     call field__fdtd_i(uf,up,gp,                                        &
+                        nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,np2,    &
+                        jup,jdown,kup,kdown,mnpr,opsum,nstat,ncomw,nerr, &
+                        q,c,delx,delt,gfac)
+     call boundary__particle(up,                                          &
+                             nygs,nyge,nzgs,nzge,nxs,nxe,nys,nye,nzs,nze, &
+                             np,nsp,np2,                                  &
+                             jup,jdown,kup,kdown,nstat,mnpi,mnpr,ncomw,nerr)
+
+     if(mod(it+it0,intvl2) == 0) call init__inject
+
+     if(mod(it+it0,intvl1) == 0)                                                  &
+          call fio__output(.false.,                                               &
+                           nxgs,nxge,nygs,nyge,nzgs,nzge,nxs,nxe,nys,nye,nzs,nze, &
+                           np,nsp,np2,it,it0,                                     &
+                           nproc,nproc_i,nproc_j,nproc_k,nrank,                   &
+                           c,q,r,delt,delx,dir,                                   &
+                           up,uf)
+
+     if(mod(it+it0,intvl3) == 0) call init__relocate
+
+  enddo loop
+
+  call MPI_FINALIZE(nerr)
 
 end program main
 

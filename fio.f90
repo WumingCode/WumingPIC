@@ -14,15 +14,16 @@ contains
 
   subroutine fio__output(lflag,                                                 &
                          nxgs,nxge,nygs,nyge,nzgs,nzge,nxs,nxe,nys,nye,nzs,nze, &
-                         np,nsp,np2,nproc,nproc_i,nproc_j,nproc_k,nrank,        &
-                         c,q,r,delt,delx,it,it0,dir,                            &
+                         np,nsp,np2,it,it0,                                     &
+                         nproc,nproc_i,nproc_j,nproc_k,nrank,                   &
+                         c,q,r,delt,delx,dir,                                   &
                          up,uf)
 
     logical, intent(in) :: lflag
-    integer, intent(in) :: nxgs, nxge, nygs, nyge, nzgs, ngze, nxs, nxe, nys, nye, nzs, nze
-    integer, intent(in) :: np, nsp, np2(nys:nye,nsp)
-    integer, intent(in) :: nproc, nproc_i, nproc_j, nproc_k, nrank
+    integer, intent(in) :: nxgs, nxge, nygs, nyge, nzgs, nzge, nxs, nxe, nys, nye, nzs, nze
+    integer, intent(in) :: np, nsp, np2(nys:nye,nzs:nze,nsp)
     integer, intent(in) :: it, it0
+    integer, intent(in) :: nproc, nproc_i, nproc_j, nproc_k, nrank
     real(8), intent(in) :: c, q(nsp), r(nsp), delt, delx
     real(8), intent(in) :: up(6,np,nys:nye,nzs:nze,nsp)
     real(8), intent(in) :: uf(6,nxgs-2:nxge+2,nys-2:nye+2,nzs-2:nze+2)
@@ -59,20 +60,20 @@ contains
   end subroutine fio__output
 
 
-  subroutine fio__input(up,uf,np2,nxs,nxe,c,q,r,delt,delx,it0,          &
+  subroutine fio__input(up,uf,np2,c,q,r,delt,delx,it0,nxs,nxe,                &
                         nxgs,nxge,nygs,nyge,nzgs,nzge,nys,nye,nzs,nze,np,nsp, &
-                        nproc,nproc_i,nproc_j,nproc_k,nrank, &
+                        nproc,nproc_i,nproc_j,nproc_k,nrank,                  &
                         dir,file)
     integer, intent(in)  :: nxgs, nxge, nygs, nyge, nzgs, nzge, nys, nye, nzs, nze
     integer, intent(in)  :: np, nsp
     integer, intent(in)  :: nproc, nproc_i, nproc_j, nproc_k, nrank
     character(len=*), intent(in) :: dir, file
     integer, intent(out) :: np2(nys:nye,nzs:nze,nsp), nxs, nxe, it0
-    real(8), intent(out) :: up(6,np,nys:nye,nzs,nze,nsp)
+    real(8), intent(out) :: up(6,np,nys:nye,nzs:nze,nsp)
     real(8), intent(out) :: uf(6,nxgs-2:nxge+2,nys-2:nye+2,nzs-2:nze+2)
     real(8), intent(out) :: c, q(nsp), r(nsp), delt, delx
     integer :: inp, inxgs, inxge, inygs, inyge, inzgs, inzge, inys, inye, inzs, inze
-    integer :: insp, inproc, inproc_i, inproc_j, inproc_k, ibc
+    integer :: insp, inproc, inproc_i, inproc_j, inproc_k
 
     !filename
     open(101+nrank,file=trim(dir)//trim(file),form='unformatted')
@@ -80,7 +81,7 @@ contains
     !time & parameters
     read(101+nrank)it0,inxgs,inxge,inygs,inyge,inzgs,inzge,nxs,nxe,inys,inye,inzs,inze
     read(101+nrank)inp,insp,inproc,inproc_i,inproc_j,inproc_k
-    if((inxgs /= nxgs) .or. (inxge /= nxge)  .or.(inygs /= nygs) .or. (inyge /= nyge)  &
+    if((inxgs /= nxgs) .or. (inxge /= nxge)  .or.(inygs /= nygs) .or. (inyge /= nyge)   &
         .or. (inzgs /= nzgs) .or. (inzge /= nzge) .or. (inys /= nys) .or. (inye /= nye) &
         .or. (inzs /= nzs) .or. (inze /= nze) .or. (inp /= np) .or. (insp /= nsp)       &
         .or. (inproc /= nproc) .or. (inproc_i /= nproc_i) .or. (inproc_j /= nproc_j)    & 
@@ -105,14 +106,13 @@ contains
   end subroutine fio__input
 
 
-  subroutine fio__param(np,nsp,np2,nxgs,nxge,nygs,nyge,nzgs,nzge,nys,nye,nzs,nze, &
-                        c,q,r,n0,temp,rtemp,fpe,fge,            &
-                        ldb,delt,delx,dir,file,                 &
-                        nroot,nrank)
+  subroutine fio__param(nxgs,nxge,nygs,nyge,nzgs,nzge,nys,nye,nzs,nze, &
+                        np,nsp,np2,                                    &
+                        c,q,r,n0,temp,rtemp,fpe,fge,                   &
+                        ldb,delt,delx,dir,file)
 
+    integer, intent(in)          :: nxgs, nxge, nygs, nyge, nzgs, nzge, nys, nye, nzs, nze
     integer, intent(in)          :: np, nsp 
-    integer, intent(in)          :: nxgs, nxge, nygs, nyge, nzgs, ngze, nys, nye, nzs, nze
-    integer, intent(in)          :: nroot, nrank
     integer, intent(in)          :: np2(nys:nye,nzs:nze,nsp)
     real(8), intent(in)          :: c, q(nsp), r(nsp), n0, temp, rtemp, fpe, fge, ldb, delt, delx
     character(len=*), intent(in) :: dir, file
@@ -125,29 +125,25 @@ contains
     vte = sqrt(2.*temp*rtemp/r(2))
     va  = fge*r(2)*c/q(1)/sqrt(4.*pi*r(1)*n0)
 
-    if(nrank == nroot)then
+    !filename
+    open(9,file=trim(dir)//trim(file),status='unknown')
 
-       !filename
-       open(9,file=trim(dir)//trim(file),status='unknown')
-
-       write(9,610) nxge-nxgs+1,' x ',nyge-nygs+1, ldb
-       write(9,620) (np2(nys,isp),isp=1,nsp),np
-       write(9,630) delx,delt,c
-       write(9,640) (r(isp),isp=1,nsp)
-       write(9,650) (q(isp),isp=1,nsp)
-       write(9,660) fpe,fge,fpe*sqrt(r(2)/r(1)),fge*r(2)/r(1)
-       write(9,670) va,vti,vte,(vti/va)**2,rtemp,vti/(fge*r(2)/r(1))
-       write(9,*)
-610    format(' grid size, debye lngth ============> ',i6,a,i6,f8.4)
-620    format(' particle number in cell============> ',i8,i8,'/',i8)
-630    format(' dx, dt, c =========================> ',f8.4,3x,f8.4,3x,f8.4)
-640    format(' Mi, Me  ===========================> ',2(1p,e10.2,1x))
-650    format(' Qi, Qe  ===========================> ',2(1p,e10.2,1x))
-660    format(' Fpe, Fge, Fpi Fgi =================> ',4(1p,e10.2,1x))
-670    format(' Va, Vi, Ve, beta, Te/Ti, rgi     ==> ',6(1p,e10.2,1x))
-       close(9)
-
-    endif
+    write(9,610) nxge-nxgs+1,' x ',nyge-nygs+1, ' x ',nzge-nzgs+1, ldb
+    write(9,620) (np2(nys,nzs,isp),isp=1,nsp),np
+    write(9,630) delx,delt,c
+    write(9,640) (r(isp),isp=1,nsp)
+    write(9,650) (q(isp),isp=1,nsp)
+    write(9,660) fpe,fge,fpe*sqrt(r(2)/r(1)),fge*r(2)/r(1)
+    write(9,670) va,vti,vte,(vti/va)**2,rtemp,vti/(fge*r(2)/r(1))
+    write(9,*)
+610 format(' grid size, debye lngth ============> ',i6,a,i6,a,i6,f8.4)
+620 format(' particle number in cell============> ',i8,i8,'/',i8)
+630 format(' dx, dt, c =========================> ',f8.4,3x,f8.4,3x,f8.4)
+640 format(' Mi, Me  ===========================> ',2(1p,e10.2,1x))
+650 format(' Qi, Qe  ===========================> ',2(1p,e10.2,1x))
+660 format(' Fpe, Fge, Fpi Fgi =================> ',4(1p,e10.2,1x))
+670 format(' Va, Vi, Ve, beta, Te/Ti, rgi     ==> ',6(1p,e10.2,1x))
+    close(9)
 
   end subroutine fio__param
 

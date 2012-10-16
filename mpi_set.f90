@@ -2,7 +2,7 @@ module mpi_set
 
   implicit none
   private
-  public :: mpi_set__init, MPI_WTIME
+  public :: mpi_set__init
 
   include 'mpif.h'
 
@@ -24,7 +24,6 @@ contains
 
     integer, intent(in) :: nxgs, nxge, nygs, nyge, nzgs, nzge
     integer, intent(in) :: nproc, nproc_i, nproc_j, nproc_k
-    integer             :: iwork1, iwork2
     integer             :: i, j, k, irank, nsize 
     integer             :: ptable(-1:nproc_i,-1:nproc_j,-1:nproc_k)
 
@@ -82,15 +81,10 @@ contains
 
     ! periodic boundary conditions in y and z directions
     if(nrank_j == 0) jdown = ptable(nrank_i,nproc_j-1,nrank_k)   
-    if(nrank_k == 0) kdown = ptable(nrank_i,nproc_j,nrank_k-1)
+    if(nrank_k == 0) kdown = ptable(nrank_i,nrank_j,nproc_k-1)
     if(nrank_j == nproc_j-1) jup = ptable(nrank_i,0,nrank_k)
     if(nrank_k == nproc_k-1) kup = ptable(nrank_i,nrank_j,0)
 
-    if(nrank_j == 0) write(*,*)jdown,nrank
-    if(nrank_k == 0) write(*,*)kdown,nrank
-    if(nrank_j == nproc_j-1) write(*,*)jdown,nrank
-    if(nrank_k == nproc_k-1) write(*,*)kdown,nrank
-    
   end subroutine mpi_set__init
 
 
