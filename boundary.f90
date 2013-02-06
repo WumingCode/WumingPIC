@@ -4,31 +4,67 @@ module boundary
 
   private
 
-  public  :: boundary__field
-  public  :: boundary__particle
-  public  :: boundary__curre
-  public  :: boundary__phi
+  public :: boundary__field
+  public :: boundary__particle_x
+  public :: boundary__particle_y
+  public :: boundary__curre
+  public :: boundary__phi
 
 
 contains
 
 
-  subroutine boundary__particle(up,                                          &
-                                nygs,nyge,nzgs,nzge,nxs,nxe,nys,nye,nzs,nze, &
-                                np,nsp,np2,                                  &
-                                jup,jdown,kup,kdown,nstat,mnpi,mnpr,ncomw,nerr)
+  subroutine boundary__particle_x(up,                                 &
+                                    nxs,nxe,nys,nye,nzs,nze,np,nsp,np2)
+
+    integer, intent(in)     :: nxs, nxe, nys, nye, nzs, nze, np, nsp
+    integer, intent(inout) :: np2(nys:nye,nzs:nze,nsp)
+    real(8), intent(inout) :: up(6,np,nys:nye,nzs:nze,nsp)
+    integer                 :: j, k, ii, isp, ipos
+
+    do isp=1,nsp
+
+!$OMP PARALLEL DO PRIVATE(ii,j,k,ipos)
+       do k=nzs,nze
+       do j=nys,nye
+          do ii=1,np2(j,k,isp)
+
+             ipos = int(up(1,ii,j,k,isp))
+
+             if(ipos <= nxs-1)then
+                up(1,ii,j,k,isp) = 2.0*nxs-up(1,ii,j,k,isp)
+                up(4,ii,j,k,isp) = -up(4,ii,j,k,isp)
+             else if(ipos >= nxe)then
+                up(1,ii,j,k,isp) = 2.0*nxe-up(1,ii,j,k,isp)
+                up(4,ii,j,k,isp) = -up(4,ii,j,k,isp)
+             endif
+
+          enddo
+       enddo
+       enddo
+!$OMP END PARALLEL DO
+
+    enddo
+
+  end subroutine boundary__particle_x
+
+
+  subroutine boundary__particle_y(up,                                  &
+                                    nygs,nyge,nzgs,nzge,nys,nye,nzs,nze, &
+                                    np,nsp,np2,                          &
+                                    jup,jdown,kup,kdown,nstat,mnpi,mnpr,ncomw,nerr)
 
 !$  use omp_lib
+    integer, intent(in)     :: nygs, nyge, nzgs, nzge, nys, nye, nzs, nze
+    integer, intent(in)     :: np, nsp
+    integer, intent(in)     :: jup, jdown, kup, kdown, mnpi, mnpr, ncomw
+    integer, intent(inout) :: nerr, nstat(:)
+    integer, intent(inout) :: np2(nys:nye,nzs:nze,nsp)
+    real(8), intent(inout) :: up(6,np,nys:nye,nzs:nze,nsp)
 
-    integer, intent(in)        :: nygs, nyge, nzgs, nzge, nxs, nxe, nys, nye, nzs, nze
-    integer, intent(in)        :: np, nsp
-    integer, intent(in)        :: jup, jdown, kup, kdown, mnpi, mnpr, ncomw
-    integer, intent(inout)     :: nerr, nstat(:)
-    integer, intent(inout)     :: np2(nys:nye,nzs:nze,nsp)
-    real(8), intent(inout)     :: up(6,np,nys:nye,nzs:nze,nsp)
     logical, save              :: lflag=.true.
 !$  integer(omp_lock_kind)     :: lck(nys-1:nye+1,nzs-1:nze+1)
-    integer                    :: j, k, ii, iii, isp, ipos, jpos, kpos, ieq
+    integer                    :: j, k, ii, iii, isp, jpos, kpos
     integer                    :: cnt(nys-1:nye+1,nzs-1:nze+1), cnt2(nys:nye,nzs:nze)
     integer                    :: cnt_tmp_j(nzs-1:nze+1), cnt_tmp_k(nys:nye), cnt_tmp
     integer                    :: ssize, rsize
@@ -60,22 +96,13 @@ contains
        cnt2(nys:nye,nzs:nze) = 0
 !$OMP END WORKSHARE
 
-!$OMP DO PRIVATE(ii,j,k,ipos,jpos,kpos)
+!$OMP DO PRIVATE(ii,j,k,jpos,kpos)
        do k=nzs,nze
        do j=nys,nye
           do ii=1,np2(j,k,isp)
 
-             ipos = int(up(1,ii,j,k,isp))
              jpos = int(up(2,ii,j,k,isp))
              kpos = int(up(3,ii,j,k,isp))
-
-             if(ipos <= nxs-1)then
-                up(1,ii,j,k,isp) = 2.0*nxs-up(1,ii,j,k,isp)
-                up(4,ii,j,k,isp) = -up(4,ii,j,k,isp)
-             else if(ipos >= nxe)then
-                up(1,ii,j,k,isp) = 2.0*nxe-up(1,ii,j,k,isp)
-                up(4,ii,j,k,isp) = -up(4,ii,j,k,isp)
-             endif
 
              if(.not.(jpos == j .and. kpos == k))then
 
@@ -327,7 +354,7 @@ contains
 
 !$OMP PARALLEL
 
-!$OMP DO PRIVATE(iii,ii,j,k,ieq,cnt_tmp)
+!$OMP DO PRIVATE(iii,ii,j,k,cnt_tmp)
        do k=nzs,nze
        do j=nys,nye
           iii=0
@@ -392,7 +419,7 @@ contains
 !$  enddo
 !$OMP END PARALLEL DO
 
-  end subroutine boundary__particle
+  end subroutine boundary__particle_y
 
 
   subroutine boundary__field(uf,                                &

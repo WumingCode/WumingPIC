@@ -15,7 +15,7 @@ program main
 
 !**********************************************************************c
 !
-!    two-dimensional electromagnetic plasma simulation code
+!    three-dimensional electromagnetic plasma simulation code
 !
 !    written by M Hoshino,  ISAS, 1984/09/12
 !    revised  1985/03/08  1985/04/05  1997/05/06
@@ -28,47 +28,57 @@ program main
 !**********************************************************************c
 
   !**** Maximum elapse time ****!o
-!!$  etlim = 48.*60.*60.-5.*60.
-!!$  etlim = 20000.-20.*60.
+!  etlim = 48.*60.*60.-5.*60.
   !Test runs
-  etlim = 15.*60.
-!!$  !*****************************!
+  etlim = 5.*60.
+  !*****************************!
 
-  etime0 = omp_get_wtime()
+!$  etime0 = omp_get_wtime()
 
   call init__set_param
   call MPI_BCAST(etime0,1,mnpr,nroot,ncomw,nerr)
 
   loop: do it=1,itmax-it0
 
-     if(nrank == nroot) etime = omp_get_wtime()
-!!$     if(nrank == nroot) write(*,*)it
-
+!$     if(nrank == nroot) etime = omp_get_wtime()
      call MPI_BCAST(etime,1,mnpr,nroot,ncomw,nerr)
 
      if(etime-etime0 >= etlim) then
-        call fio__output(.true.,                                                &
-                         nxgs,nxge,nygs,nyge,nzgs,nzge,nxs,nxe,nys,nye,nzs,nze, &
-                         np,nsp,np2,it,it0,                                     &
-                         nproc,nproc_i,nproc_j,nproc_k,nrank,                   &
-                         c,q,r,delt,delx,dir,                                   &
-                         up,uf)
+!        call fio__output(.true.,                                                &
+!                         nxgs,nxge,nygs,nyge,nzgs,nzge,nxs,nxe,nys,nye,nzs,nze, &
+!                         np,nsp,np2,it,it0,                                     &
+!                         nproc,nproc_i,nproc_j,nproc_k,nrank,                   &
+!                         c,q,r,delt,delx,dir,                                   &
+!                         up,uf)
         if(nrank == nroot) write(*,*) '*** elapse time over ***',it,etime-etime0
         exit loop
      endif
 
+     call fapp_start("ptcl",1,1)
      call particle__solv(gp,                                   &
                          nxgs,nxge,nys,nye,nzs,nze,np,nsp,np2, &
                          c,q,r,delt,delx,                      &
                          up,uf)
+     call fapp_stop("ptcl",1,1)
+
+     call fapp_start("bnd1",1,1)
+     call boundary__particle_x(gp,                                 &
+                                nxs,nxe,nys,nye,nzs,nze,np,nsp,np2)
+     call fapp_stop("bnd1",1,1)
+
+     call fapp_start("fld",1,1)
      call field__fdtd_i(uf,up,gp,                                        &
                         nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,np2,    &
                         jup,jdown,kup,kdown,mnpr,opsum,nstat,ncomw,nerr, &
                         q,c,delx,delt,gfac)
-     call boundary__particle(up,                                          &
-                             nygs,nyge,nzgs,nzge,nxs,nxe,nys,nye,nzs,nze, &
-                             np,nsp,np2,                                  &
-                             jup,jdown,kup,kdown,nstat,mnpi,mnpr,ncomw,nerr)
+     call fapp_stop("fld",1,1)
+
+     call fapp_start("bnd2",1,1)
+     call boundary__particle_y(up,                                  &
+                               nygs,nyge,nzgs,nzge,nys,nye,nzs,nze, &
+                               np,nsp,np2,                          &
+                               jup,jdown,kup,kdown,nstat,mnpi,mnpr,ncomw,nerr)
+     call fapp_stop("bnd2",1,1)
 
      if(mod(it+it0,intvl2) == 0) call init__inject
 

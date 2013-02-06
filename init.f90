@@ -80,14 +80,16 @@ contains
 !             gfac = 1.0 : Backward Euler (1st order)
 !*********************************************************************
     pi     = 4.0*atan(1.0)
-    itmax  = 50
-    intvl1 = 40000
+    itmax  = 100000
+    intvl1 = 5000
     intvl2 = 1
-    intvl3 = 50000
+    intvl3 = 500000
     !for pc
 !!$    dir    = '../../dat/shock/test/'
     !for oakleaf-fx@u-tokyo
-    dir    = '/group/gc30/c30002/pic3d/shock/test/' 
+!    dir    = '/group/gc30/c30002/pic3d/shock/test/' 
+    !for "K"
+    dir    = './'
     file9  = 'init_param.dat'
     gfac   = 0.505
     it0    = 0
@@ -111,7 +113,7 @@ contains
     delt = 0.5
     ldb  = delx
 
-    r(1) = 16.0
+    r(1) = 25.0
     r(2) = 1.0
 
     alpha = 10.0
@@ -134,7 +136,7 @@ contains
     fpi = fpe*dsqrt(r(2)/r(1))
 
     !average number density at x=nxgs (magnetosheath)
-    n0 = 10.
+    n0 = 40.
 
     if(nrank == nroot)then
        if(n0*(nxge-nxgs) > np)then
@@ -155,7 +157,7 @@ contains
 
     if(it0 /= 0)then
        !start from the past calculation
-       write(file11,'(a,i3.3,a)')'0000025_rank=',nrank,'.dat'
+       write(file11,'(a,i3.3,a)')'9999999_rank=',nrank,'.dat'
        call fio__input(up,uf,np2,c,q,r,delt,delx,it0,nxs,nxe,                &
                        nxgs,nxge,nygs,nyge,nzgs,nzge,nys,nye,nzs,nze,np,nsp, &
                        nproc,nproc_i,nproc_j,nproc_k,nrank,                  &
@@ -207,19 +209,11 @@ contains
           up(1,ii,j,k,1) = nxs*delx+(nxe-nxs)*delx*ii/(np2(j,k,isp)+1)
           up(1,ii,j,k,2) = up(1,ii,j,k,1)
 
-          aa = 0.0D0
-          do while(aa==1.D0)
-             call random_number(aa)
-          enddo
-
+          call random_number(aa)
           up(2,ii,j,k,1) = dble(j)*delx+delx*aa
           up(2,ii,j,k,2) = up(2,ii,j,k,1)
 
-          aa = 0.0D0
-          do while(aa==1.D0)
-             call random_number(aa)
-          enddo
-
+          call random_number(aa)
           up(3,ii,j,k,1) = dble(k)*delx+delx*aa
           up(3,ii,j,k,2) = up(3,ii,j,k,1)
        enddo
@@ -305,17 +299,11 @@ contains
           up(1,ii2,j,k,1) = (nxe-1)*delx+delx*ii/(dn+1)
           up(1,ii3,j,k,2) = up(1,ii2,j,k,1)
 
-          aa = 0.0D0
-          do while(aa==1.D0)
-             call random_number(aa)
-          enddo
+          call random_number(aa)
           up(2,ii2,j,k,1) = dble(j)*delx+delx*aa
           up(2,ii3,j,k,2) = up(2,ii2,j,k,1)
 
-          aa = 0.0D0
-          do while(aa==1.D0)
-             call random_number(aa)
-          enddo
+          call random_number(aa)
           up(3,ii2,j,k,1) = dble(k)*delx+delx*aa
           up(3,ii3,j,k,2) = up(3,ii2,j,k,1)
        enddo
@@ -418,19 +406,11 @@ contains
           up(1,ii2,j,k,1) = nxe*delx+dx*(dn-ii+1)/(dn+1)
           up(1,ii3,j,k,2) = up(1,ii2,j,k,1)
 
-          aa = 0.0D0
-          do while(aa==1.D0)
-             call random_number(aa)
-          enddo
-
+          call random_number(aa)
           up(2,ii2,j,k,1) = dble(j)*delx+delx*aa
           up(2,ii3,j,k,2) = up(2,ii2,j,k,1)
 
-          aa = 0.0D0
-          do while(aa==1.D0)
-             call random_number(aa)
-          enddo
-
+          call random_number(aa)
           up(3,ii2,j,k,1) = dble(k)*delx+delx*aa
           up(3,ii3,j,k,2) = up(3,ii2,j,k,1)
        enddo
