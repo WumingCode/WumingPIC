@@ -2,6 +2,7 @@ module init
 
   use const
   use mpi_set
+  use sort, only : sort__bucket
 
   implicit none
 
@@ -10,7 +11,7 @@ module init
   public :: init__set_param, init__inject, init__relocate
 
   integer, public, parameter   :: nroot=0
-  integer, allocatable, public :: np2(:,:,:)
+  integer, allocatable, public :: np2(:,:,:), cumcnt(:,:,:,:)
   integer, public              :: itmax, it0, intvl1, intvl2, intvl3
   real(8), public              :: delx, delt, gfac
   real(8), public              :: c, q(nsp), r(nsp)
@@ -28,7 +29,7 @@ contains
 
     use fio, only : fio__input, fio__param
 
-    integer              :: n
+    integer              :: n, i, j, k, isp
     integer, allocatable :: seed(:)
     real(8)              :: fgi, fpi, alpha, beta, va, fpe, fge, rgi, rge, ldb, rtemp
     character(len=128)   :: file9 
@@ -48,6 +49,7 @@ contains
 
 !*********** Memory Allocations  ****************!
     allocate(np2(nys:nye,nzs:nze,nsp))
+    allocate(cumcnt(nxs:nxe,nys:nye,nzs:nze,nsp))
     allocate(uf(6,nxgs-2:nxge+2,nys-2:nye+2,nzs-2:nze+2))
     allocate(up(6,np,nys:nye,nzs:nze,nsp))
     allocate(gp(6,np,nys:nye,nzs:nze,nsp))
@@ -148,6 +150,24 @@ contains
     !number of particles in each cell in y
     np2(nys:nye,nzs:nze,1:nsp) = n0*(nxe-nxs)*delx
 
+    !prepareation for sort
+    do isp=1,nsp
+!$OMP PARALLEL DO PRIVATE(i,j,k)
+       do k=nzs,nze
+       do j=nys,nye
+          cumcnt(nxs,j,k,isp) = 0
+          do i=nxs+1,nxe
+             cumcnt(i,j,k,isp) = cumcnt(i-1,j,k,isp)+n0
+          enddo
+          if(cumcnt(nxe,j,k,isp) /= np2(j,k,isp))then
+             write(*,*)'error in cumcnt'
+             stop
+          endif
+       enddo
+       enddo
+!$OMP END PARALLEL DO
+    enddo
+
     !charge
     q(1) = fpi*dsqrt(r(1)/(4.0*pi*n0))
     q(2) = -q(1)
@@ -162,6 +182,7 @@ contains
                        nxgs,nxge,nygs,nyge,nzgs,nzge,nys,nye,nzs,nze,np,nsp, &
                        nproc,nproc_i,nproc_j,nproc_k,nrank,                  &
                        dir,file11)
+       call sort__bucket(up,cumcnt,nxs,nxe,nys,nye,nzs,nze,np,nsp,np2)
        return
     endif
 
