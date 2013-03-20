@@ -19,7 +19,7 @@ contains
  
     integer, intent(in)    :: nxgs, nxge, nxs, nxe, nys, nye, nzs, nze
     integer, intent(in)    :: np, nsp
-    integer, intent(in)    :: cumcnt(nxs:nxe,nys:nye,nzs:nze,nsp)
+    integer, intent(in)    :: cumcnt(nxgs:nxge,nys:nye,nzs:nze,nsp)
     integer, intent(in)    :: jup, jdown, kup, kdown, opsum, mnpr, ncomw
     integer, intent(inout) :: nerr, nstat(:)
     real(8), intent(in)    :: q(nsp), c, delx, delt, gfac
@@ -43,8 +43,8 @@ contains
        lflag=.false.
     endif
 
-    call ele_cur(uj,up,gp,                              &
-                 nxs,nxe,nys,nye,nzs,nze,np,nsp,cumcnt, &
+    call ele_cur(uj,up,gp,                                        &
+                 nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,cumcnt, &
                  q,delx,delt)
 
     call boundary__curre(uj,nxs,nxe,nys,nye,nzs,nze, &
@@ -130,12 +130,12 @@ contains
   end subroutine field__fdtd_i
 
 
-  subroutine ele_cur(uj,up,gp,                                &
-                       nxs,nxe,nys,nye,nzs,nze,np,nsp,cumcnt, &
-                       q,delx,delt)
+  subroutine ele_cur(uj,up,gp,                                        &
+                     nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,cumcnt, &
+                     q,delx,delt)
 
-    integer, intent(in)    :: nxs, nxe, nys, nye, nzs, nze, np, nsp 
-    integer, intent(in)    :: cumcnt(nxs:nxe,nys:nye,nzs:nze,nsp)
+    integer, intent(in)    :: nxgs, nxge, nxs, nxe, nys, nye, nzs, nze, np, nsp 
+    integer, intent(in)    :: cumcnt(nxgs:nxge,nys:nye,nzs:nze,nsp)
     real(8), intent(in)    :: q(nsp), delx, delt
     real(8), intent(in)    :: gp(6,np,nys:nye,nzs:nze,nsp)
     real(8), intent(inout) :: up(6,np,nys:nye,nzs:nze,nsp)
@@ -144,8 +144,10 @@ contains
     integer            :: ii, i, j, k, isp, i2, inc, ip, jp, kp
     real(8), parameter :: fac = 1.D0/3.D0
     real(8)            :: idelx, idelt, dh
-    real(8)            :: s0(-2:2,3), ds(-2:2,3), s1_1, s1_2, s1_3, smo_1, smo_2, smo_3
-    real(8)            :: pjx(-2:2,-2:2,-2:2), pjy(-2:2,-2:2,-2:2), pjz(-2:2,-2:2,-2:2), pjtmp(-2:2,-2:2,-2:2)
+    real(8)            :: s1_1, s1_2, s1_3, smo_1, smo_2, smo_3
+    real(8)            :: pjtmpx, pjtmpy, pjtmpz, dstmpx, dstmpy, dstmpz
+    real(8)            :: s0x(-2:2), s0y(-2:2), s0z(-2:2), dsx(-2:2), dsy(-2:2), dsz(-2:2)
+    real(8)            :: pjx(-2:2,-2:2,-2:2), pjy(-2:2,-2:2,-2:2), pjz(-2:2,-2:2,-2:2)
 
 !$OMP PARALLEL WORKSHARE
     uj(1:3,nxs-2:nxe+2,nys-2:nye+2,nzs-2:nze+2) = 0.D0
@@ -156,8 +158,10 @@ contains
 
     !--------------Charge Conservation Method -------------!
     !---- Density Decomposition (Esirkepov, CPC, 2001) ----!
-!$OMP PARALLEL DO PRIVATE(ii,i,j,k,isp,i2,inc,ip,jp,kp,                                &
-!$OMP                     s1_1,s1_2,s1_3,smo_1,smo_2,smo_3,dh,s0,ds,pjx,pjy,pjz,pjtmp) &
+!$OMP PARALLEL DO PRIVATE(ii,i,j,k,isp,i2,inc,ip,jp,kp,              &
+!$OMP                     s1_1,s1_2,s1_3,smo_1,smo_2,smo_3,dh,       &
+!$OMP                     s0x,s0y,s0z,dsx,dsy,dsz,pjx,pjy,pjz,       &
+!$OMP                     pjtmpx,pjtmpy,pjtmpz,dstmpx,dstmpy,dstmpz) &
 !$OMP REDUCTION(+:uj)
     do k=nzs,nze
     do j=nys,nye
@@ -173,25 +177,25 @@ contains
 	
 !          second order shape function
           dh = up(1,ii,j,k,isp)*idelx-0.5-i
-          s0(-2,1) = 0.D0
-          s0(-1,1) = 0.5*(0.5-dh)*(0.5-dh)
-          s0( 0,1) = 0.75-dh*dh
-          s0(+1,1) = 0.5*(0.5+dh)*(0.5+dh)
-          s0(+2,1) = 0.D0
+          s0x(-2) = 0.D0
+          s0x(-1) = 0.5*(0.5-dh)*(0.5-dh)
+          s0x( 0) = 0.75-dh*dh
+          s0x(+1) = 0.5*(0.5+dh)*(0.5+dh)
+          s0x(+2) = 0.D0
 
           dh = up(2,ii,j,k,isp)*idelx-0.5-j
-          s0(-2,2) = 0.D0
-          s0(-1,2) = 0.5*(0.5-dh)*(0.5-dh)
-          s0( 0,2) = 0.75-dh*dh
-          s0(+1,2) = 0.5*(0.5+dh)*(0.5+dh)
-          s0(+2,2) = 0.D0
+          s0y(-2) = 0.D0
+          s0y(-1) = 0.5*(0.5-dh)*(0.5-dh)
+          s0y( 0) = 0.75-dh*dh
+          s0y(+1) = 0.5*(0.5+dh)*(0.5+dh)
+          s0y(+2) = 0.D0
 
           dh = up(3,ii,j,k,isp)*idelx-0.5-k
-          s0(-2,3) = 0.D0
-          s0(-1,3) = 0.5*(0.5-dh)*(0.5-dh)
-          s0( 0,3) = 0.75-dh*dh
-          s0(+1,3) = 0.5*(0.5+dh)*(0.5+dh)
-          s0(+2,3) = 0.D0
+          s0z(-2) = 0.D0
+          s0z(-1) = 0.5*(0.5-dh)*(0.5-dh)
+          s0z( 0) = 0.75-dh*dh
+          s0z(+1) = 0.5*(0.5+dh)*(0.5+dh)
+          s0z(+2) = 0.D0
 
           i2 = int(gp(1,ii,j,k,isp)*idelx)
           dh = gp(1,ii,j,k,isp)*idelx-0.5-i2
@@ -202,11 +206,11 @@ contains
           smo_1 = -(inc-abs(inc))*0.5+0
           smo_2 = -abs(inc)+1
           smo_3 = (inc+abs(inc))*0.5+0
-          ds(-2,1) = s1_1*smo_1
-          ds(-1,1) = s1_1*smo_2+s1_2*smo_1
-          ds( 0,1) = s1_2*smo_2+s1_3*smo_1+s1_1*smo_3
-          ds(+1,1) = s1_3*smo_2+s1_2*smo_3
-          ds(+2,1) = s1_3*smo_3
+          dsx(-2) = s1_1*smo_1
+          dsx(-1) = s1_1*smo_2+s1_2*smo_1
+          dsx( 0) = s1_2*smo_2+s1_3*smo_1+s1_1*smo_3
+          dsx(+1) = s1_3*smo_2+s1_2*smo_3
+          dsx(+2) = s1_3*smo_3
 
           i2 = int(gp(2,ii,j,k,isp)*idelx)
           dh = gp(2,ii,j,k,isp)*idelx-0.5-i2
@@ -217,11 +221,11 @@ contains
           smo_1 = -(inc-abs(inc))*0.5+0
           smo_2 = -abs(inc)+1
           smo_3 = (inc+abs(inc))*0.5+0
-          ds(-2,2) = s1_1*smo_1
-          ds(-1,2) = s1_1*smo_2+s1_2*smo_1
-          ds( 0,2) = s1_2*smo_2+s1_3*smo_1+s1_1*smo_3
-          ds(+1,2) = s1_3*smo_2+s1_2*smo_3
-          ds(+2,2) = s1_3*smo_3
+          dsy(-2) = s1_1*smo_1
+          dsy(-1) = s1_1*smo_2+s1_2*smo_1
+          dsy( 0) = s1_2*smo_2+s1_3*smo_1+s1_1*smo_3
+          dsy(+1) = s1_3*smo_2+s1_2*smo_3
+          dsy(+2) = s1_3*smo_3
 
           i2 = int(gp(3,ii,j,k,isp)*idelx)
           dh = gp(3,ii,j,k,isp)*idelx-0.5-i2
@@ -232,13 +236,15 @@ contains
           smo_1 = -(inc-abs(inc))*0.5+0
           smo_2 = -abs(inc)+1
           smo_3 = (inc+abs(inc))*0.5+0
-          ds(-2,3) = s1_1*smo_1
-          ds(-1,3) = s1_1*smo_2+s1_2*smo_1
-          ds( 0,3) = s1_2*smo_2+s1_3*smo_1+s1_1*smo_3
-          ds(+1,3) = s1_3*smo_2+s1_2*smo_3
-          ds(+2,3) = s1_3*smo_3
+          dsz(-2) = s1_1*smo_1
+          dsz(-1) = s1_1*smo_2+s1_2*smo_1
+          dsz( 0) = s1_2*smo_2+s1_3*smo_1+s1_1*smo_3
+          dsz(+1) = s1_3*smo_2+s1_2*smo_3
+          dsz(+2) = s1_3*smo_3
 
-          ds(-2:2,1:3) = ds(-2:2,1:3)-s0(-2:2,1:3)
+          dsx(-2:2) = dsx(-2:2)-s0x(-2:2)
+          dsy(-2:2) = dsy(-2:2)-s0y(-2:2)
+          dsz(-2:2) = dsz(-2:2)-s0z(-2:2)
 
           up(1,ii,j,k,isp) = gp(1,ii,j,k,isp)
           up(2,ii,j,k,isp) = gp(2,ii,j,k,isp)
@@ -247,70 +253,56 @@ contains
           up(5,ii,j,k,isp) = gp(5,ii,j,k,isp)
           up(6,ii,j,k,isp) = gp(6,ii,j,k,isp)
 
-          pjtmp(-2:2,-2:2,-2:2) = 0.D0
-
+!OCL UNROLL('FULL')
           do kp=-2,2
           do jp=-2,2
+             pjtmpx = 0.D0
+             pjtmpy = 0.D0
+             pjtmpz = 0.D0
+             dstmpx =  (s0y(jp)+0.5*dsy(jp))*s0z(kp) &
+                      +(0.5*s0y(jp)+fac*dsy(jp))*dsz(kp)
+             dstmpy =  (s0x(jp)+0.5*dsx(jp))*s0z(kp) &
+                      +(0.5*s0x(jp)+fac*dsx(jp))*dsz(kp)
+             dstmpz =  (s0x(jp)+0.5*dsx(jp))*s0y(kp) &
+                      +(0.5*s0x(jp)+fac*dsx(jp))*dsy(kp)
           do ip=-2,1
-             pjtmp(ip+1,jp,kp) = pjtmp(ip,jp,kp) &
-                                -q(isp)*delx*idelt*ds(ip,1)*( +(s0(jp,2)+0.5*ds(jp,2))*s0(kp,3) &
-                                                              +(0.5*s0(jp,2)+fac*ds(jp,2))*ds(kp,3) )
+             pjtmpx = pjtmpx-q(isp)*delx*idelt*dsx(ip)*dstmpx
+             pjtmpy = pjtmpy-q(isp)*delx*idelt*dsy(ip)*dstmpy
+             pjtmpz = pjtmpz-q(isp)*delx*idelt*dsz(ip)*dstmpz
+             pjx(ip+1,jp,kp) = pjx(ip+1,jp,kp)+pjtmpx
+             pjy(ip+1,jp,kp) = pjy(ip+1,jp,kp)+pjtmpy
+             pjz(ip+1,jp,kp) = pjz(ip+1,jp,kp)+pjtmpz
           enddo
           enddo
           enddo
-          pjx = pjx+pjtmp
-
-          pjtmp(-2:2,-2:2,-2:2) = 0.D0
-          do kp=-2,2
-          do jp=-2,1
-          do ip=-2,2
-             pjtmp(ip,jp+1,kp) = pjtmp(ip,jp,kp) &
-                                -q(isp)*delx*idelt*ds(jp,2)*( +(s0(ip,1)+0.5*ds(ip,1))*s0(kp,3) &
-                                                              +(0.5*s0(ip,1)+fac*ds(ip,1))*ds(kp,3) )
-          enddo
-          enddo
-          enddo
-          pjy = pjy+pjtmp
-
-          pjtmp(-2:2,-2:2,-2:2) = 0.D0
-          do kp=-2,1
-          do jp=-2,2
-          do ip=-2,2
-             pjtmp(ip,jp,kp+1) = pjtmp(ip,jp,kp) &
-                                -q(isp)*delx*idelt*ds(kp,3)*( +(s0(ip,1)+0.5*ds(ip,1))*s0(jp,2) &
-                                                              +(0.5*s0(ip,1)+fac*ds(ip,1))*ds(jp,2) )
-          enddo
-          enddo
-          enddo
-          pjz = pjz+pjtmp
 
        enddo
 
        isp=2
 
        do ii=cumcnt(i,j,k,isp)+1,cumcnt(i+1,j,k,isp)
-
-          !second order shape function
+	
+!          second order shape function
           dh = up(1,ii,j,k,isp)*idelx-0.5-i
-          s0(-2,1) = 0.D0
-          s0(-1,1) = 0.5*(0.5-dh)*(0.5-dh)
-          s0( 0,1) = 0.75-dh*dh
-          s0(+1,1) = 0.5*(0.5+dh)*(0.5+dh)
-          s0(+2,1) = 0.D0
+          s0x(-2) = 0.D0
+          s0x(-1) = 0.5*(0.5-dh)*(0.5-dh)
+          s0x( 0) = 0.75-dh*dh
+          s0x(+1) = 0.5*(0.5+dh)*(0.5+dh)
+          s0x(+2) = 0.D0
 
           dh = up(2,ii,j,k,isp)*idelx-0.5-j
-          s0(-2,2) = 0.D0
-          s0(-1,2) = 0.5*(0.5-dh)*(0.5-dh)
-          s0( 0,2) = 0.75-dh*dh
-          s0(+1,2) = 0.5*(0.5+dh)*(0.5+dh)
-          s0(+2,2) = 0.D0
+          s0y(-2) = 0.D0
+          s0y(-1) = 0.5*(0.5-dh)*(0.5-dh)
+          s0y( 0) = 0.75-dh*dh
+          s0y(+1) = 0.5*(0.5+dh)*(0.5+dh)
+          s0y(+2) = 0.D0
 
           dh = up(3,ii,j,k,isp)*idelx-0.5-k
-          s0(-2,3) = 0.D0
-          s0(-1,3) = 0.5*(0.5-dh)*(0.5-dh)
-          s0( 0,3) = 0.75-dh*dh
-          s0(+1,3) = 0.5*(0.5+dh)*(0.5+dh)
-          s0(+2,3) = 0.D0
+          s0z(-2) = 0.D0
+          s0z(-1) = 0.5*(0.5-dh)*(0.5-dh)
+          s0z( 0) = 0.75-dh*dh
+          s0z(+1) = 0.5*(0.5+dh)*(0.5+dh)
+          s0z(+2) = 0.D0
 
           i2 = int(gp(1,ii,j,k,isp)*idelx)
           dh = gp(1,ii,j,k,isp)*idelx-0.5-i2
@@ -321,11 +313,11 @@ contains
           smo_1 = -(inc-abs(inc))*0.5+0
           smo_2 = -abs(inc)+1
           smo_3 = (inc+abs(inc))*0.5+0
-          ds(-2,1) = s1_1*smo_1
-          ds(-1,1) = s1_1*smo_2+s1_2*smo_1
-          ds( 0,1) = s1_2*smo_2+s1_3*smo_1+s1_1*smo_3
-          ds(+1,1) = s1_3*smo_2+s1_2*smo_3
-          ds(+2,1) = s1_3*smo_3
+          dsx(-2) = s1_1*smo_1
+          dsx(-1) = s1_1*smo_2+s1_2*smo_1
+          dsx( 0) = s1_2*smo_2+s1_3*smo_1+s1_1*smo_3
+          dsx(+1) = s1_3*smo_2+s1_2*smo_3
+          dsx(+2) = s1_3*smo_3
 
           i2 = int(gp(2,ii,j,k,isp)*idelx)
           dh = gp(2,ii,j,k,isp)*idelx-0.5-i2
@@ -336,11 +328,11 @@ contains
           smo_1 = -(inc-abs(inc))*0.5+0
           smo_2 = -abs(inc)+1
           smo_3 = (inc+abs(inc))*0.5+0
-          ds(-2,2) = s1_1*smo_1
-          ds(-1,2) = s1_1*smo_2+s1_2*smo_1
-          ds( 0,2) = s1_2*smo_2+s1_3*smo_1+s1_1*smo_3
-          ds(+1,2) = s1_3*smo_2+s1_2*smo_3
-          ds(+2,2) = s1_3*smo_3
+          dsy(-2) = s1_1*smo_1
+          dsy(-1) = s1_1*smo_2+s1_2*smo_1
+          dsy( 0) = s1_2*smo_2+s1_3*smo_1+s1_1*smo_3
+          dsy(+1) = s1_3*smo_2+s1_2*smo_3
+          dsy(+2) = s1_3*smo_3
 
           i2 = int(gp(3,ii,j,k,isp)*idelx)
           dh = gp(3,ii,j,k,isp)*idelx-0.5-i2
@@ -351,51 +343,45 @@ contains
           smo_1 = -(inc-abs(inc))*0.5+0
           smo_2 = -abs(inc)+1
           smo_3 = (inc+abs(inc))*0.5+0
-          ds(-2,3) = s1_1*smo_1
-          ds(-1,3) = s1_1*smo_2+s1_2*smo_1
-          ds( 0,3) = s1_2*smo_2+s1_3*smo_1+s1_1*smo_3
-          ds(+1,3) = s1_3*smo_2+s1_2*smo_3
-          ds(+2,3) = s1_3*smo_3
+          dsz(-2) = s1_1*smo_1
+          dsz(-1) = s1_1*smo_2+s1_2*smo_1
+          dsz( 0) = s1_2*smo_2+s1_3*smo_1+s1_1*smo_3
+          dsz(+1) = s1_3*smo_2+s1_2*smo_3
+          dsz(+2) = s1_3*smo_3
 
-          ds(-2:2,1:3) = ds(-2:2,1:3)-s0(-2:2,1:3)
+          dsx(-2:2) = dsx(-2:2)-s0x(-2:2)
+          dsy(-2:2) = dsy(-2:2)-s0y(-2:2)
+          dsz(-2:2) = dsz(-2:2)-s0z(-2:2)
 
-          up(1:6,ii,j,k,isp) = gp(1:6,ii,j,k,isp)
+          up(1,ii,j,k,isp) = gp(1,ii,j,k,isp)
+          up(2,ii,j,k,isp) = gp(2,ii,j,k,isp)
+          up(3,ii,j,k,isp) = gp(3,ii,j,k,isp)
+          up(4,ii,j,k,isp) = gp(4,ii,j,k,isp)
+          up(5,ii,j,k,isp) = gp(5,ii,j,k,isp)
+          up(6,ii,j,k,isp) = gp(6,ii,j,k,isp)
 
-          pjtmp(-2:2,-2:2,-2:2) = 0.D0
+!OCL UNROLL('FULL')
           do kp=-2,2
           do jp=-2,2
+             pjtmpx = 0.D0
+             pjtmpy = 0.D0
+             pjtmpz = 0.D0
+             dstmpx =  (s0y(jp)+0.5*dsy(jp))*s0z(kp) &
+                      +(0.5*s0y(jp)+fac*dsy(jp))*dsz(kp)
+             dstmpy =  (s0x(jp)+0.5*dsx(jp))*s0z(kp) &
+                      +(0.5*s0x(jp)+fac*dsx(jp))*dsz(kp)
+             dstmpz =  (s0x(jp)+0.5*dsx(jp))*s0y(kp) &
+                      +(0.5*s0x(jp)+fac*dsx(jp))*dsy(kp)
           do ip=-2,1
-             pjtmp(ip+1,jp,kp) = pjtmp(ip,jp,kp) &
-                                -q(isp)*delx*idelt*ds(ip,1)*( +(s0(jp,2)+0.5*ds(jp,2))*s0(kp,3) &
-                                                              +(0.5*s0(jp,2)+fac*ds(jp,2))*ds(kp,3) )
+             pjtmpx = pjtmpx-q(isp)*delx*idelt*dsx(ip)*dstmpx
+             pjtmpy = pjtmpy-q(isp)*delx*idelt*dsy(ip)*dstmpy
+             pjtmpz = pjtmpz-q(isp)*delx*idelt*dsz(ip)*dstmpz
+             pjx(ip+1,jp,kp) = pjx(ip+1,jp,kp)+pjtmpx
+             pjy(ip+1,jp,kp) = pjy(ip+1,jp,kp)+pjtmpy
+             pjz(ip+1,jp,kp) = pjz(ip+1,jp,kp)+pjtmpz
           enddo
           enddo
           enddo
-          pjx = pjx+pjtmp
-
-          pjtmp(-2:2,-2:2,-2:2) = 0.D0
-          do kp=-2,2
-          do jp=-2,1
-          do ip=-2,2
-             pjtmp(ip,jp+1,kp) = pjtmp(ip,jp,kp) &
-                                -q(isp)*delx*idelt*ds(jp,2)*( +(s0(ip,1)+0.5*ds(ip,1))*s0(kp,3) &
-                                                              +(0.5*s0(ip,1)+fac*ds(ip,1))*ds(kp,3) )
-          enddo
-          enddo
-          enddo
-          pjy = pjy+pjtmp
-
-          pjtmp(-2:2,-2:2,-2:2) = 0.D0
-          do kp=-2,1
-          do jp=-2,2
-          do ip=-2,2
-             pjtmp(ip,jp,kp+1) = pjtmp(ip,jp,kp) &
-                                -q(isp)*delx*idelt*ds(kp,3)*( +(s0(ip,1)+0.5*ds(ip,1))*s0(jp,2) &
-                                                              +(0.5*s0(ip,1)+fac*ds(ip,1))*ds(jp,2) )
-          enddo
-          enddo
-          enddo
-          pjz = pjz+pjtmp
 
        enddo
 
@@ -403,8 +389,8 @@ contains
        do jp=-2,2
        do ip=-2,2
           uj(1,i+ip,j+jp,k+kp) = uj(1,i+ip,j+jp,k+kp)+pjx(ip,jp,kp)
-          uj(2,i+ip,j+jp,k+kp) = uj(2,i+ip,j+jp,k+kp)+pjy(ip,jp,kp)
-          uj(3,i+ip,j+jp,k+kp) = uj(3,i+ip,j+jp,k+kp)+pjz(ip,jp,kp)
+          uj(2,i+ip,j+jp,k+kp) = uj(2,i+ip,j+jp,k+kp)+pjy(jp,ip,kp)
+          uj(3,i+ip,j+jp,k+kp) = uj(3,i+ip,j+jp,k+kp)+pjz(kp,ip,jp)
        enddo
        enddo
        enddo

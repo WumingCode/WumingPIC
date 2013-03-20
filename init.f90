@@ -49,7 +49,7 @@ contains
 
 !*********** Memory Allocations  ****************!
     allocate(np2(nys:nye,nzs:nze,nsp))
-    allocate(cumcnt(nxs:nxe,nys:nye,nzs:nze,nsp))
+    allocate(cumcnt(nxgs:nxge,nys:nye,nzs:nze,nsp))
     allocate(uf(6,nxgs-2:nxge+2,nys-2:nye+2,nzs-2:nze+2))
     allocate(up(6,np,nys:nye,nzs:nze,nsp))
     allocate(gp(6,np,nys:nye,nzs:nze,nsp))
@@ -182,7 +182,7 @@ contains
                        nxgs,nxge,nygs,nyge,nzgs,nzge,nys,nye,nzs,nze,np,nsp, &
                        nproc,nproc_i,nproc_j,nproc_k,nrank,                  &
                        dir,file11)
-       call sort__bucket(up,cumcnt,nxs,nxe,nys,nye,nzs,nze,np,nsp,np2)
+       call sort__bucket(up,cumcnt,nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,np2)
        return
     endif
 

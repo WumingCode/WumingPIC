@@ -10,11 +10,11 @@ module sort
 contains
 
 
-  subroutine sort__bucket(up,cumcnt,nxs,nxe,nys,nye,nzs,nze,np,nsp,np2)
+  subroutine sort__bucket(up,cumcnt,nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,np2)
 
-    integer, intent(in)    :: nxs, nxe, nys, nye, nzs, nze, np, nsp
+    integer, intent(in)    :: nxgs, nxge, nxs, nxe, nys, nye, nzs, nze, np, nsp
     integer, intent(in)    :: np2(nys:nye,nzs:nze,nsp)
-    integer, intent(out)   :: cumcnt(nxs:nxe,nys:nye,nzs:nze,nsp)
+    integer, intent(out)   :: cumcnt(nxgs:nxge,nys:nye,nzs:nze,nsp)
     real(8), intent(inout) :: up(6,np,nys:nye,nzs:nze,nsp)
     logical, save              :: lflag=.true.
     integer                    :: i, j, k, ii, isp

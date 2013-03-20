@@ -29,8 +29,9 @@ program main
 !**********************************************************************c
 
   !**** Maximum elapse time ****!o
-!  etlim = 48.*60.*60.-5.*60.
+!  etlim = 24.*60.*60.-10.*60.
   !Test runs
+!  etlim = 1.*60.*60.
   etlim = 5.*60.
   !*****************************!
 
@@ -82,7 +83,7 @@ program main
 
      if(mod(it+it0,intvl3) == 0) call init__relocate
 
-     call sort__bucket(up,cumcnt,nxs,nxe,nys,nye,nzs,nze,np,nsp,np2)
+     call sort__bucket(up,cumcnt,nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,np2)
 
   enddo loop
 
