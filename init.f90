@@ -41,10 +41,10 @@ contains
 !*********** End of MPI settings  ***************!
 
 !************* Physical region ******************!
+!    nxs  = nxgs
+!    nxe  = nxge
     nxs  = nxgs
-    nxe  = nxge
-!!$    nxs  = nxgs
-!!$    nxe  = nxs+nx*0.2-1
+    nxe  = nxs+nx*0.2-1
 !****************   End of  * *******************!
 
 !*********** Memory Allocations  ****************!
@@ -82,16 +82,16 @@ contains
 !             gfac = 1.0 : Backward Euler (1st order)
 !*********************************************************************
     pi     = 4.0*atan(1.0)
-    itmax  = 100000
-    intvl1 = 5000
+    itmax  = 80000
+    intvl1 = 2500
     intvl2 = 1
-    intvl3 = 500000
+    intvl3 = 20
     !for pc
-!!$    dir    = '../../dat/shock/test/'
+!    dir    = '../../dat/shock/test/'
     !for oakleaf-fx@u-tokyo
-!    dir    = '/group/gc30/c30002/pic3d/shock/test/' 
+    dir    = './shock/run1/' 
     !for "K"
-    dir    = './'
+!    dir    = './'
     file9  = 'init_param.dat'
     gfac   = 0.505
     it0    = 0
@@ -138,7 +138,7 @@ contains
     fpi = fpe*dsqrt(r(2)/r(1))
 
     !average number density at x=nxgs (magnetosheath)
-    n0 = 40.
+    n0 = 30.
 
     if(nrank == nroot)then
        if(n0*(nxge-nxgs) > np)then
@@ -177,7 +177,7 @@ contains
 
     if(it0 /= 0)then
        !start from the past calculation
-       write(file11,'(a,i3.3,a)')'9999999_rank=',nrank,'.dat'
+       write(file11,'(a,i5.5,a)')'9999999_rank=',nrank,'.dat'
        call fio__input(up,uf,np2,c,q,r,delt,delx,it0,nxs,nxe,                &
                        nxgs,nxge,nygs,nyge,nzgs,nzge,nys,nye,nzs,nze,np,nsp, &
                        nproc,nproc_i,nproc_j,nproc_k,nrank,                  &
@@ -387,11 +387,11 @@ contains
     do j=nys,nye
        uf(2,nxe-1,j,k) = 0.D0
        uf(3,nxe-1,j,k) = b0
+       uf(5,nxe-1,j,k) = +v0*uf(3,nxe-1,j,k)/c
+       uf(6,nxe-1,j,k) = -v0*uf(2,nxe-1,j,k)/c
 
        uf(2,nxe,j,k) = 0.0D0
        uf(3,nxe,j,k) = b0
-       uf(5,nxe,j,k) = +v0*uf(3,nxe,j,k)/c
-       uf(6,nxe,j,k) = -v0*uf(2,nxe,j,k)/c
     enddo
     enddo
 !$OMP END PARALLEL DO
@@ -500,11 +500,11 @@ contains
     do j=nys,nye
        uf(2,nxe-1,j,k) = 0.D0
        uf(3,nxe-1,j,k) = b0
+       uf(5,nxe-1,j,k) = v0*uf(3,nxe-1,j,k)/c
+       uf(6,nxe-1,j,k) = -v0*uf(2,nxe-1,j,k)/c
 
        uf(2,nxe,j,k) = 0.D0
        uf(3,nxe,j,k) = b0
-       uf(5,nxe,j,k) = v0*uf(3,nxe,j,k)/c
-       uf(6,nxe,j,k) = -v0*uf(2,nxe,j,k)/c
     enddo
     enddo
 !$OMP END PARALLEL DO

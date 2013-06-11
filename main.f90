@@ -29,10 +29,10 @@ program main
 !**********************************************************************c
 
   !**** Maximum elapse time ****!o
-!  etlim = 24.*60.*60.-10.*60.
+  etlim = 24.*60.*60.-10.*60.
   !Test runs
 !  etlim = 1.*60.*60.
-  etlim = 5.*60.
+!  etlim = 5.*60.
   !*****************************!
 
   etime0 = omp_get_wtime()
@@ -46,12 +46,12 @@ program main
      call MPI_BCAST(etime,1,mnpr,nroot,ncomw,nerr)
 
      if(etime-etime0 >= etlim) then
-!        call fio__output(.true.,                                                &
-!                         nxgs,nxge,nygs,nyge,nzgs,nzge,nxs,nxe,nys,nye,nzs,nze, &
-!                         np,nsp,np2,it,it0,                                     &
-!                         nproc,nproc_i,nproc_j,nproc_k,nrank,                   &
-!                         c,q,r,delt,delx,dir,                                   &
-!                         up,uf)
+        call fio__output(.true.,                                                &
+                         nxgs,nxge,nygs,nyge,nzgs,nzge,nxs,nxe,nys,nye,nzs,nze, &
+                         np,nsp,np2,it,it0,                                     &
+                         nproc,nproc_i,nproc_j,nproc_k,nrank,                   &
+                         c,q,r,delt,delx,dir,                                   &
+                         up,uf)
         if(nrank == nroot) write(*,*) '*** elapse time over ***',it,etime-etime0
         exit loop
      endif

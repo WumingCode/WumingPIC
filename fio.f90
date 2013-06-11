@@ -35,9 +35,9 @@ contains
 
     !filename
     if(lflag)then
-       write(filename,'(a,i7.7,a,i3.3,a)')trim(dir),9999999,'_rank=',nrank,'.dat'
+       write(filename,'(a,i7.7,a,i5.5,a)')trim(dir),9999999,'_rank=',nrank,'.dat'
     else
-       write(filename,'(a,i7.7,a,i3.3,a)')trim(dir),it2,'_rank=',nrank,'.dat'
+       write(filename,'(a,i7.7,a,i5.5,a)')trim(dir),it2,'_rank=',nrank,'.dat'
     endif
     open(100+nrank,file=filename,form='unformatted')
 
@@ -131,7 +131,7 @@ contains
     write(9,610) nxge-nxgs+1,' x ',nyge-nygs+1, ' x ',nzge-nzgs+1, ldb
     write(9,620) (np2(nys,nzs,isp),isp=1,nsp),np
     write(9,630) delx,delt,c
-    write(9,640) (r(isp),isp=1,nsp)
+    write(9,640) (r(isp),isp=1,nsp)	
     write(9,650) (q(isp),isp=1,nsp)
     write(9,660) fpe,fge,fpe*sqrt(r(2)/r(1)),fge*r(2)/r(1)
     write(9,670) va,vti,vte,(vti/va)**2,rtemp,vti/(fge*r(2)/r(1))

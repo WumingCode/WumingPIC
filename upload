@@ -7,8 +7,8 @@ else
 endif
 
 switch ($host)
-case "oak"
-    rsync --progress -azu *.f90 -e ssh oak:simulation/PIC3D/src/shock/
+case "tatara"
+    rsync --progress -azu *.f90 -e ssh tatara:simulation/PIC3D/src/shock/
     breaksw
 case "k"
     rsync --progress -azu *.f90 -e ssh k:simulation/PIC3D/src/shock/
@@ -17,5 +17,5 @@ case "k2"
     rsync --progress -azu *.f90 -e ssh k2:simulation/PIC3D/src/shock/
     breaksw
 default
-    echo "choose k or k2 or oak"
+    echo "choose k or k2 or tatara"
 endsw
