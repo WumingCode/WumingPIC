@@ -53,7 +53,7 @@ contains
     allocate(uf(6,nxgs-2:nxge+2,nys-2:nye+2,nzs-2:nze+2))
     allocate(up(6,np,nys:nye,nzs:nze,nsp))
     allocate(gp(6,np,nys:nye,nzs:nze,nsp))
-!***************** ENd of  **********************!
+!***************** End of  **********************!
 
 !*********** Random seed *************!
     call random_seed()
@@ -99,7 +99,7 @@ contains
 !*********************************************************************
 !   r(1)  : ion mass             r(2)  : electron mass
 !   q(1)  : ion charge           q(2)  : electron charge
-!   c     : speed of light       ldb   : debye length
+!   c     : speed of light       ldb   : Debye length
 !
 !   rgi   : ion Larmor radius    rge   : electron Larmor radius
 !   fgi   : ion gyro-frequency   fge   : electron gyro-frequency
@@ -150,7 +150,7 @@ contains
     !number of particles in each cell in y
     np2(nys:nye,nzs:nze,1:nsp) = n0*(nxe-nxs)*delx
 
-    !prepareation for sort
+    !preparation for sort
     do isp=1,nsp
 !$OMP PARALLEL DO PRIVATE(i,j,k)
        do k=nzs,nze
