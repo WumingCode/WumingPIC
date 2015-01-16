@@ -19,7 +19,7 @@ module init
   real(8), allocatable, public :: up(:,:,:,:,:)
   real(8), allocatable, public :: gp(:,:,:,:,:)
   character(len=128), public   :: dir
-  real(8), save                :: pi, n0, u0, v0, b0, vti, vte, gam0
+  real(8), save                :: pi, n0, u0, v0, b0, vti, vte, gam0, theta
 
 
 contains
@@ -41,9 +41,8 @@ contains
 !*********** End of MPI settings  ***************!
 
 !************* Physical region ******************!
-!    nxs  = nxgs
-!    nxe  = nxge
     nxs  = nxgs
+!    nxe  = nxge
     nxe  = nxs+nx*0.2-1
 !****************   End of  * *******************!
 
@@ -82,19 +81,19 @@ contains
 !             gfac = 1.0 : Backward Euler (1st order)
 !*********************************************************************
     pi     = 4.0*atan(1.0)
-    itmax  = 80000
-    intvl1 = 2500
-    intvl2 = 1
-    intvl3 = 20
+    itmax  = 200000
+    intvl1 = 25000
+    intvl2 = 2
+    intvl3 = 25
     !for pc
 !    dir    = '../../dat/shock/test/'
     !for oakleaf-fx@u-tokyo
-    dir    = './shock/run1/' 
+!    dir    = './shock/test/' 
     !for "K"
-!    dir    = './'
+    dir    = './'
     file9  = 'init_param.dat'
     gfac   = 0.505
-    it0    = 0
+    it0    = 1
 
 !*********************************************************************
 !   r(1)  : ion mass             r(2)  : electron mass
@@ -115,7 +114,7 @@ contains
     delt = 0.5
     ldb  = delx
 
-    r(1) = 25.0
+    r(1) = 64.0
     r(2) = 1.0
 
     alpha = 10.0
@@ -130,7 +129,7 @@ contains
     rgi = rge*dsqrt(r(1)/r(2))/dsqrt(rtemp)
     vte = rge*fge
     vti = vte*dsqrt(r(2)/r(1))/dsqrt(rtemp)
-    v0  = -10.0*va
+    v0  = -16.0*va
     u0  = v0/dsqrt(1.-(v0/c)**2)
     gam0 = dsqrt(1.+u0**2/c**2)
 
@@ -138,7 +137,7 @@ contains
     fpi = fpe*dsqrt(r(2)/r(1))
 
     !average number density at x=nxgs (magnetosheath)
-    n0 = 30.
+    n0 = 20.
 
     if(nrank == nroot)then
        if(n0*(nxge-nxgs) > np)then
@@ -175,14 +174,24 @@ contains
     !Magnetic field strength
     b0 = fgi*r(1)*c/q(1)
 
+    !Shock angle
+    theta = 60.D0 /360.D0*2.*pi
+    b0 = b0/sin(theta)
+
     if(it0 /= 0)then
        !start from the past calculation
+!       write(file11,'(a,i5.5,a)')'0050000_rank=',nrank,'.dat'
        write(file11,'(a,i5.5,a)')'9999999_rank=',nrank,'.dat'
        call fio__input(up,uf,np2,c,q,r,delt,delx,it0,nxs,nxe,                &
                        nxgs,nxge,nygs,nyge,nzgs,nzge,nys,nye,nzs,nze,np,nsp, &
                        nproc,nproc_i,nproc_j,nproc_k,nrank,                  &
                        dir,file11)
-       call sort__bucket(up,cumcnt,nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,np2)
+       call sort__bucket(gp,up,cumcnt,nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,np2)
+
+!$OMP PARALLEL WORKSHARE
+       up(1:6,1:np,nys:nye,nzs:nze,1:nsp)=gp(1:6,1:np,nys:nye,nzs:nze,1:nsp)
+!$OMP END PARALLEL WORKSHARE
+
        return
     endif
 
@@ -209,9 +218,9 @@ contains
     do k=nzs-2,nze+2
     do j=nys-2,nye+2
     do i=nxgs-2,nxge+2
-       uf(1,i,j,k) = 0.0D0
+       uf(1,i,j,k) = b0*cos(theta)
        uf(2,i,j,k) = 0.0D0
-       uf(3,i,j,k) = b0
+       uf(3,i,j,k) = b0*sin(theta)
        uf(4,i,j,k) = 0.0
        uf(5,i,j,k) = +v0*uf(3,i,j,k)/c
        uf(6,i,j,k) = -v0*uf(2,i,j,k)/c
@@ -247,14 +256,12 @@ contains
     do isp=1,nsp
        if(isp == 1) then 
           sd = vti/sqrt(2.)
-          gamp = dsqrt(1.D0+sd*sd/(c*c))
        endif
        if(isp == 2) then
           sd = vte/sqrt(2.)
-          gamp = dsqrt(1.D0+sd*sd/(c*c))
        endif
 
-!$OMP PARALLEL DO PRIVATE(ii,j,k,aa,bb,cc)
+!$OMP PARALLEL DO PRIVATE(ii,j,k,aa,bb,cc,gamp)
        do k=nzs,nze
        do j=nys,nye
           do ii=1,np2(j,k,isp)
@@ -269,7 +276,8 @@ contains
              up(4,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*(2.*bb-1)
              up(5,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*cos(2.*pi*cc)
              up(6,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*sin(2.*pi*cc)
-             
+             gamp = dsqrt(1.D0+(up(4,ii,j,k,isp)**2+up(5,ii,j,k,isp)**2+up(6,ii,j,k,isp)**2)/c**2)
+
              call random_number(cc)
 
              if(up(4,ii,j,k,isp)*v0 >= 0.)then
@@ -292,18 +300,16 @@ contains
   end subroutine init__loading
 
 
-  subroutine init__relocate
+  subroutine init__relocate(upp)
 
     use boundary, only : boundary__field
 !$  use omp_lib
 
+    real(8), intent(out) :: upp(6,np,nys:nye,nzs:nze,nsp)
     integer :: dn, isp, j, k, ii, ii2 ,ii3
     real(8) :: aa, bb, cc, sd, gamp
 
-!    if(nxs==nxgs) return
     if(nxe==nxge) return
-
-!    nxs  = nxs-1
     nxe  = nxe+1
 
     dn = n0
@@ -316,17 +322,16 @@ contains
           ii2 = np2(j,k,1)+ii
           ii3 = np2(j,k,2)+ii
 
-!          up(1,ii2,j,k,1) = nxs*delx+delx*ii/(dn+1)
-          up(1,ii2,j,k,1) = (nxe-1)*delx+delx*ii/(dn+1)
-          up(1,ii3,j,k,2) = up(1,ii2,j,k,1)
+          upp(1,ii2,j,k,1) = (nxe-1)*delx+delx*ii/(dn+1)
+          upp(1,ii3,j,k,2) = upp(1,ii2,j,k,1)
 
           call random_number(aa)
-          up(2,ii2,j,k,1) = dble(j)*delx+delx*aa
-          up(2,ii3,j,k,2) = up(2,ii2,j,k,1)
+          upp(2,ii2,j,k,1) = dble(j)*delx+delx*aa
+          upp(2,ii3,j,k,2) = upp(2,ii2,j,k,1)
 
           call random_number(aa)
-          up(3,ii2,j,k,1) = dble(k)*delx+delx*aa
-          up(3,ii3,j,k,2) = up(3,ii2,j,k,1)
+          upp(3,ii2,j,k,1) = dble(k)*delx+delx*aa
+          upp(3,ii3,j,k,2) = upp(3,ii2,j,k,1)
        enddo
     enddo
     enddo
@@ -337,14 +342,12 @@ contains
     do isp=1,nsp
        if(isp == 1) then 
           sd = vti/sqrt(2.)
-          gamp = dsqrt(1.D0+sd*sd/(c*c))
        endif
        if(isp == 2) then
           sd = vte/sqrt(2.)
-          gamp = dsqrt(1.D0+sd*sd/(c*c))
        endif
 
-!$OMP PARALLEL DO PRIVATE(ii,j,k,aa,bb,cc)
+!$OMP PARALLEL DO PRIVATE(ii,j,k,aa,bb,cc,gamp)
        do k=nzs,nze
        do j=nys,nye
           do ii=np2(j,k,isp)+1,np2(j,k,isp)+dn
@@ -356,19 +359,20 @@ contains
              call random_number(bb)
              call random_number(cc)
              
-             up(4,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*(2.*bb-1)
-             up(5,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*cos(2.*pi*cc)
-             up(6,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*sin(2.*pi*cc)
+             upp(4,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*(2.*bb-1)
+             upp(5,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*cos(2.*pi*cc)
+             upp(6,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*sin(2.*pi*cc)
+             gamp = dsqrt(1.D0+(upp(4,ii,j,k,isp)**2+upp(5,ii,j,k,isp)**2+upp(6,ii,j,k,isp)**2)/c**2)
 
              call random_number(cc)
 
-             if(up(4,ii,j,k,isp)*v0 >= 0.)then
-                up(4,ii,j,k,isp) = (+up(4,ii,j,k,isp)+v0*gamp)*gam0
+             if(upp(4,ii,j,k,isp)*v0 >= 0.)then
+                upp(4,ii,j,k,isp) = (+upp(4,ii,j,k,isp)+v0*gamp)*gam0
              else
-                if(cc < (-v0*up(4,ii,j,k,isp)/gamp))then
-                   up(4,ii,j,k,isp) = (-up(4,ii,j,k,isp)+v0*gamp)*gam0
+                if(cc < (-v0*upp(4,ii,j,k,isp)/gamp))then
+                   upp(4,ii,j,k,isp) = (-upp(4,ii,j,k,isp)+v0*gamp)*gam0
                 else
-                   up(4,ii,j,k,isp) = (+up(4,ii,j,k,isp)+v0*gamp)*gam0
+                   upp(4,ii,j,k,isp) = (+upp(4,ii,j,k,isp)+v0*gamp)*gam0
                 endif
              endif
           enddo
@@ -386,12 +390,12 @@ contains
     do k=nzs,nze
     do j=nys,nye
        uf(2,nxe-1,j,k) = 0.D0
-       uf(3,nxe-1,j,k) = b0
+       uf(3,nxe-1,j,k) = b0*sin(theta)
        uf(5,nxe-1,j,k) = +v0*uf(3,nxe-1,j,k)/c
        uf(6,nxe-1,j,k) = -v0*uf(2,nxe-1,j,k)/c
 
        uf(2,nxe,j,k) = 0.0D0
-       uf(3,nxe,j,k) = b0
+       uf(3,nxe,j,k) = b0*sin(theta)
     enddo
     enddo
 !$OMP END PARALLEL DO
@@ -403,18 +407,18 @@ contains
   end subroutine init__relocate
 
 
-  subroutine init__inject
+  subroutine init__inject(upp)
 
     use boundary, only : boundary__field
 
+    real(8), intent(out) :: upp(6,np,nys:nye,nzs:nze,nsp)
     integer :: isp, ii, ii2, ii3, j, k, dn
-    real(8) :: sd, aa, bb, cc, dx, fac, gamp
+    real(8) :: sd, aa, bb, cc, dx, gamp
 
-    !Inject particles in x=nxe-v0*dt~nxe*dt
+    !Inject particles in x=nxe-v0*dt~dt*nxe
 
     dx  = v0*delt*intvl2/delx
-    dn  = abs(n0*dx)
-    fac = (dn)/(0.30+dn)
+    dn  = abs(n0*dx)+0.5
 
 !$OMP PARALLEL DO PRIVATE(ii,ii2,ii3,j,k,aa)
     do k=nzs,nze
@@ -423,17 +427,16 @@ contains
           ii2 = np2(j,k,1)+ii
           ii3 = np2(j,k,2)+ii
 
-!!$          up(1,ii2,j,k,1) = nxs*delx+dx*ii/(dn+1)
-          up(1,ii2,j,k,1) = nxe*delx+dx*(dn-ii+1)/(dn+1)
-          up(1,ii3,j,k,2) = up(1,ii2,j,k,1)
+          upp(1,ii2,j,k,1) = nxe*delx+dx*(dn-ii+1)/(dn+1)
+          upp(1,ii3,j,k,2) = upp(1,ii2,j,k,1)
 
           call random_number(aa)
-          up(2,ii2,j,k,1) = dble(j)*delx+delx*aa
-          up(2,ii3,j,k,2) = up(2,ii2,j,k,1)
+          upp(2,ii2,j,k,1) = dble(j)*delx+delx*aa
+          upp(2,ii3,j,k,2) = upp(2,ii2,j,k,1)
 
           call random_number(aa)
-          up(3,ii2,j,k,1) = dble(k)*delx+delx*aa
-          up(3,ii3,j,k,2) = up(3,ii2,j,k,1)
+          upp(3,ii2,j,k,1) = dble(k)*delx+delx*aa
+          upp(3,ii3,j,k,2) = upp(3,ii2,j,k,1)
        enddo
     enddo
     enddo
@@ -443,15 +446,13 @@ contains
     !Maxwellian distribution
     do isp=1,nsp
        if(isp == 1) then 
-          sd = vti/dsqrt(2.0D0)/fac
-          gamp = dsqrt(1.D0+sd*sd/(c*c))
+          sd = vti/dsqrt(2.0D0)
        endif
        if(isp == 2) then
-          sd = vte/dsqrt(2.0D0)/fac
-          gamp = dsqrt(1.D0+sd*sd/(c*c))
+          sd = vte/dsqrt(2.0D0)
        endif
 
-!$OMP PARALLEL DO PRIVATE(ii,j,k,aa,bb,cc)
+!$OMP PARALLEL DO PRIVATE(ii,j,k,aa,bb,cc,gamp)
        do k=nzs,nze
        do j=nys,nye
           do ii=np2(j,k,isp)+1,np2(j,k,isp)+dn
@@ -463,19 +464,20 @@ contains
              call random_number(bb)
              call random_number(cc)
 
-             up(4,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*(2.*bb-1)
-             up(5,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*cos(2.*pi*cc)
-             up(6,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*sin(2.*pi*cc)
+             upp(4,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*(2.*bb-1)
+             upp(5,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*cos(2.*pi*cc)
+             upp(6,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*sin(2.*pi*cc)
+             gamp = dsqrt(1.D0+(upp(4,ii,j,k,isp)**2+upp(5,ii,j,k,isp)**2+upp(6,ii,j,k,isp)**2)/c**2)
 
              call random_number(cc)
 
-             if(up(4,ii,j,k,isp)*v0 >= 0.)then
-                up(4,ii,j,k,isp) = (+up(4,ii,j,k,isp)+v0*gamp)*gam0
+             if(upp(4,ii,j,k,isp)*v0 >= 0.)then
+                upp(4,ii,j,k,isp) = (+upp(4,ii,j,k,isp)+v0*gamp)*gam0
              else
-                if(cc < (-v0*up(4,ii,j,k,isp)/gamp))then
-                   up(4,ii,j,k,isp) = (-up(4,ii,j,k,isp)+v0*gamp)*gam0
+                if(cc < (-v0*upp(4,ii,j,k,isp)/gamp))then
+                   upp(4,ii,j,k,isp) = (-upp(4,ii,j,k,isp)+v0*gamp)*gam0
                 else
-                   up(4,ii,j,k,isp) = (+up(4,ii,j,k,isp)+v0*gamp)*gam0
+                   upp(4,ii,j,k,isp) = (+upp(4,ii,j,k,isp)+v0*gamp)*gam0
                 endif
              endif
           enddo
@@ -499,12 +501,12 @@ contains
     do k=nzs,nze
     do j=nys,nye
        uf(2,nxe-1,j,k) = 0.D0
-       uf(3,nxe-1,j,k) = b0
+       uf(3,nxe-1,j,k) = b0*sin(theta)
        uf(5,nxe-1,j,k) = v0*uf(3,nxe-1,j,k)/c
        uf(6,nxe-1,j,k) = -v0*uf(2,nxe-1,j,k)/c
 
        uf(2,nxe,j,k) = 0.D0
-       uf(3,nxe,j,k) = b0
+       uf(3,nxe,j,k) = b0*sin(theta)
     enddo
     enddo
 !$OMP END PARALLEL DO

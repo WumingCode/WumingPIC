@@ -14,13 +14,13 @@ module boundary
 contains
 
 
-  subroutine boundary__particle_x(up,                                 &
-                                    nxs,nxe,nys,nye,nzs,nze,np,nsp,np2)
+  subroutine boundary__particle_x(gp,                                 &
+                                  nxs,nxe,nys,nye,nzs,nze,np,nsp,np2)
 
-    integer, intent(in)     :: nxs, nxe, nys, nye, nzs, nze, np, nsp
+    integer, intent(in)    :: nxs, nxe, nys, nye, nzs, nze, np, nsp
     integer, intent(inout) :: np2(nys:nye,nzs:nze,nsp)
-    real(8), intent(inout) :: up(6,np,nys:nye,nzs:nze,nsp)
-    integer                 :: j, k, ii, isp, ipos
+    real(8), intent(inout) :: gp(6,np,nys:nye,nzs:nze,nsp)
+    integer                :: j, k, ii, isp, ipos
 
     do isp=1,nsp
 
@@ -29,14 +29,14 @@ contains
        do j=nys,nye
           do ii=1,np2(j,k,isp)
 
-             ipos = int(up(1,ii,j,k,isp))
+             ipos = int(gp(1,ii,j,k,isp))
 
              if(ipos <= nxs-1)then
-                up(1,ii,j,k,isp) = 2.0*nxs-up(1,ii,j,k,isp)
-                up(4,ii,j,k,isp) = -up(4,ii,j,k,isp)
+                gp(1,ii,j,k,isp) = 2.0*nxs-gp(1,ii,j,k,isp)
+                gp(4,ii,j,k,isp) = -gp(4,ii,j,k,isp)
              else if(ipos >= nxe)then
-                up(1,ii,j,k,isp) = 2.0*nxe-up(1,ii,j,k,isp)
-                up(4,ii,j,k,isp) = -up(4,ii,j,k,isp)
+                gp(1,ii,j,k,isp) = 2.0*nxe-gp(1,ii,j,k,isp)
+                gp(4,ii,j,k,isp) = -gp(4,ii,j,k,isp)
              endif
 
           enddo
@@ -50,14 +50,14 @@ contains
 
 
   subroutine boundary__particle_y(up,                                  &
-                                    nygs,nyge,nzgs,nzge,nys,nye,nzs,nze, &
-                                    np,nsp,np2,                          &
-                                    jup,jdown,kup,kdown,nstat,mnpi,mnpr,ncomw,nerr)
+                                  nygs,nyge,nzgs,nzge,nys,nye,nzs,nze, &
+                                  np,nsp,np2,                          &
+                                  jup,jdown,kup,kdown,nstat,mnpi,mnpr,ncomw,nerr)
 
 !$  use omp_lib
-    integer, intent(in)     :: nygs, nyge, nzgs, nzge, nys, nye, nzs, nze
-    integer, intent(in)     :: np, nsp
-    integer, intent(in)     :: jup, jdown, kup, kdown, mnpi, mnpr, ncomw
+    integer, intent(in)    :: nygs, nyge, nzgs, nzge, nys, nye, nzs, nze
+    integer, intent(in)    :: np, nsp
+    integer, intent(in)    :: jup, jdown, kup, kdown, mnpi, mnpr, ncomw
     integer, intent(inout) :: nerr, nstat(:)
     integer, intent(inout) :: np2(nys:nye,nzs:nze,nsp)
     real(8), intent(inout) :: up(6,np,nys:nye,nzs:nze,nsp)
@@ -632,33 +632,33 @@ contains
 !$OMP PARALLEL DO PRIVATE(j,k)
     do k=nzs-2,nze+2
     do j=nys-2,nye+2
-       uf(1,nxs-2,j,k) = -uf(1,nxs+1,j,k)
-       uf(2,nxs-2,j,k) = +uf(2,nxs+2,j,k)
-       uf(3,nxs-2,j,k) = +uf(3,nxs+2,j,k)
-       uf(4,nxs-2,j,k) = +uf(4,nxs+2,j,k)
-       uf(5,nxs-2,j,k) = -uf(5,nxs+1,j,k)
-       uf(6,nxs-2,j,k) = -uf(6,nxs+1,j,k)
+       uf(1,nxs-2,j,k) = +uf(1,nxs+1,j,k)
+       uf(2,nxs-2,j,k) = +2.*uf(2,nxs,j,k)-uf(2,nxs+2,j,k)
+       uf(3,nxs-2,j,k) = +2.*uf(3,nxs,j,k)-uf(3,nxs+2,j,k)
+!       uf(4,nxs-2,j,k) = +uf(4,nxs+2,j,k)
+       uf(5,nxs-2,j,k) = +uf(5,nxs+1,j,k)
+       uf(6,nxs-2,j,k) = +uf(6,nxs+1,j,k)
 
-       uf(1,nxs-1,j,k) = -uf(1,nxs  ,j,k)
-       uf(2,nxs-1,j,k) = +uf(2,nxs+1,j,k)
-       uf(3,nxs-1,j,k) = +uf(3,nxs+1,j,k)
-       uf(4,nxs-1,j,k) = +uf(4,nxs+1,j,k)
-       uf(5,nxs-1,j,k) = -uf(5,nxs  ,j,k)
-       uf(6,nxs-1,j,k) = -uf(6,nxs  ,j,k)
+       uf(1,nxs-1,j,k) = +uf(1,nxs  ,j,k)
+       uf(2,nxs-1,j,k) = +2.*uf(2,nxs,j,k)-uf(2,nxs+1,j,k)
+       uf(3,nxs-1,j,k) = +2.*uf(3,nxs,j,k)-uf(3,nxs+1,j,k)
+!       uf(4,nxs-1,j,k) = +uf(4,nxs+1,j,k)
+       uf(5,nxs-1,j,k) = +uf(5,nxs  ,j,k)
+       uf(6,nxs-1,j,k) = +uf(6,nxs  ,j,k)
 
-       uf(1,nxe  ,j,k) = -uf(1,nxe-1,j,k)
-       uf(2,nxe+1,j,k) = +uf(2,nxe-1,j,k)
-       uf(3,nxe+1,j,k) = +uf(3,nxe-1,j,k)
-       uf(4,nxe+1,j,k) = +uf(4,nxe-1,j,k)
-       uf(5,nxe  ,j,k) = -uf(5,nxe-1,j,k)
-       uf(6,nxe  ,j,k) = -uf(6,nxe-1,j,k)
+       uf(1,nxe  ,j,k) = +uf(1,nxe-1,j,k)
+       uf(2,nxe+1,j,k) = +2.*uf(2,nxe,j,k)-uf(2,nxe-1,j,k)
+       uf(3,nxe+1,j,k) = +2.*uf(3,nxe,j,k)-uf(3,nxe-1,j,k)
+!       uf(4,nxe+1,j,k) = +uf(4,nxe-1,j,k)
+       uf(5,nxe  ,j,k) = +uf(5,nxe-1,j,k)
+       uf(6,nxe  ,j,k) = +uf(6,nxe-1,j,k)
 
-       uf(1,nxe+1,j,k) = -uf(1,nxe-2,j,k)
-       uf(2,nxe+2,j,k) = +uf(2,nxe-2,j,k)
-       uf(3,nxe+2,j,k) = +uf(3,nxe-2,j,k)
-       uf(4,nxe+2,j,k) = +uf(4,nxe-2,j,k)
-       uf(5,nxe+1,j,k) = -uf(5,nxe-2,j,k)
-       uf(6,nxe+1,j,k) = -uf(6,nxe-2,j,k)
+       uf(1,nxe+1,j,k) = +uf(1,nxe-2,j,k)
+       uf(2,nxe+2,j,k) = +2.*uf(2,nxe,j,k)-uf(2,nxe-2,j,k)
+       uf(3,nxe+2,j,k) = +2.*uf(3,nxe,j,k)-uf(3,nxe-2,j,k)
+!       uf(4,nxe+2,j,k) = +uf(4,nxe-2,j,k)
+       uf(5,nxe+1,j,k) = +uf(5,nxe-2,j,k)
+       uf(6,nxe+1,j,k) = +uf(6,nxe-2,j,k)
     enddo
     enddo
 !$OMP END PARALLEL DO
@@ -829,19 +829,21 @@ contains
 !$OMP PARALLEL DO PRIVATE(j,k)
     do k=nzs,nze
     do j=nys,nye
-       uj(1,nxs+1,j,k) = uj(1,nxs+1,j,k)-uj(1,nxs-1,j,k)
-       uj(1,nxs+2,j,k) = uj(1,nxs+2,j,k)-uj(1,nxs-2,j,k)
+!       uj(1,nxs+1,j,k) = uj(1,nxs+1,j,k)-uj(1,nxs-1,j,k)
+!       uj(1,nxs+2,j,k) = uj(1,nxs+2,j,k)-uj(1,nxs-2,j,k)
+       uj(1,nxs  ,j,k) = 2.*uj(1,nxs  ,j,k)
        uj(2,nxs  ,j,k) = uj(2,nxs  ,j,k)+uj(2,nxs-1,j,k)
        uj(3,nxs  ,j,k) = uj(3,nxs  ,j,k)+uj(3,nxs-1,j,k)
        uj(2,nxs+1,j,k) = uj(2,nxs+1,j,k)+uj(2,nxs-2,j,k)
        uj(3,nxs+1,j,k) = uj(3,nxs+1,j,k)+uj(3,nxs-2,j,k)
 
-       uj(1,nxe-2,j,k) = uj(1,nxe-2,j,k)-uj(1,nxe+2,j,k)
-       uj(1,nxe-1,j,k) = uj(1,nxe-1,j,k)-uj(1,nxe+1,j,k)
+!       uj(1,nxe-2,j,k) = uj(1,nxe-2,j,k)-uj(1,nxe+2,j,k)
+!       uj(1,nxe-1,j,k) = uj(1,nxe-1,j,k)-uj(1,nxe+1,j,k)
        uj(2,nxe-2,j,k) = uj(2,nxe-2,j,k)+uj(2,nxe+1,j,k)
        uj(3,nxe-2,j,k) = uj(3,nxe-2,j,k)+uj(3,nxe+1,j,k)
        uj(2,nxe-1,j,k) = uj(2,nxe-1,j,k)+uj(2,nxe  ,j,k)
        uj(3,nxe-1,j,k) = uj(3,nxe-1,j,k)+uj(3,nxe  ,j,k)
+       uj(1,nxe  ,j,k) = 2.*uj(1,nxe  ,j,k)
     enddo
     enddo
 !$OMP END PARALLEL DO

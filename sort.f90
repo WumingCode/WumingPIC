@@ -10,21 +10,15 @@ module sort
 contains
 
 
-  subroutine sort__bucket(up,cumcnt,nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,np2)
+  subroutine sort__bucket(gp,up,cumcnt,nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,np2)
 
-    integer, intent(in)    :: nxgs, nxge, nxs, nxe, nys, nye, nzs, nze, np, nsp
-    integer, intent(in)    :: np2(nys:nye,nzs:nze,nsp)
-    integer, intent(out)   :: cumcnt(nxgs:nxge,nys:nye,nzs:nze,nsp)
-    real(8), intent(inout) :: up(6,np,nys:nye,nzs:nze,nsp)
-    logical, save              :: lflag=.true.
-    integer                    :: i, j, k, ii, isp
-    integer                    :: cnt(nxs:nxe-1), sum_cnt(nxs:nxe-1) 
-    real(8), save, allocatable :: tmp(:,:,:,:)
-
-    if(lflag)then
-       allocate(tmp(1:6,np,nys:nye,nzs:nze))
-       lflag=.false.
-    endif
+    integer, intent(in)  :: nxgs, nxge, nxs, nxe, nys, nye, nzs, nze, np, nsp
+    integer, intent(in)  :: np2(nys:nye,nzs:nze,nsp)
+    integer, intent(out) :: cumcnt(nxgs:nxge,nys:nye,nzs:nze,nsp)
+    real(8), intent(in)  :: up(6,np,nys:nye,nzs:nze,nsp)
+    real(8), intent(out) :: gp(6,np,nys:nye,nzs:nze,nsp)
+    integer              :: i, j, k, ii, isp
+    integer              :: cnt(nxs:nxe-1), sum_cnt(nxs:nxe-1) 
 
     do isp=1,nsp
 
@@ -34,10 +28,9 @@ contains
        do j=nys,nye
           
           cnt(nxs:nxe-1) = 0
-          tmp(1:6,1:np2(j,k,isp),j,k) = up(1:6,1:np2(j,k,isp),j,k,isp)
 
           do ii=1,np2(j,k,isp)
-             i = int(tmp(1,ii,j,k))
+             i = int(up(1,ii,j,k,isp))
              cnt(i) = cnt(i)+1
           enddo
 
@@ -50,8 +43,8 @@ contains
           cumcnt(nxe,j,k,isp) = np2(j,k,isp)
 
           do ii=1,np2(j,k,isp)
-             i = int(tmp(1,ii,j,k))
-             up(1:6,sum_cnt(i)+1,j,k,isp) = tmp(1:6,ii,j,k)
+             i = int(up(1,ii,j,k,isp))
+             gp(1:6,sum_cnt(i)+1,j,k,isp) = up(1:6,ii,j,k,isp)
              sum_cnt(i) = sum_cnt(i)+1
           enddo
 

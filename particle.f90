@@ -22,7 +22,7 @@ contains
     real(8), intent(in)  :: uf(6,nxgs-2:nxge+2,nys-2:nye+2,nzs-2:nze+2)
     real(8), intent(out) :: gp(6,np,nys:nye,nzs:nze,nsp)
 
-    integer            :: i,j, k, ii, isp, i0, j0, k0, ih
+    integer            :: i,j, k, ii, isp, i0, j0, k0
     real(8)            :: tmpf(6,-1:2,-1:2,-1:2)
     real(8)            :: idelx, dh, fac1, fac1r, fac2, fac2r, gam, igam, txxx
     real(8)            :: bpx, bpy, bpz, epx, epy, epz
@@ -32,7 +32,7 @@ contains
 
     idelx = 1./delx
 
-!$OMP PARALLEL DO PRIVATE(ii,i,j,k,isp,i0,j0,k0,ih,                    &
+!$OMP PARALLEL DO PRIVATE(ii,i,j,k,isp,i0,j0,k0,                       &
 !$OMP                     dh,gam,igam,fac1,fac2,txxx,fac1r,fac2r,tmpf, &
 !$OMP                     s0xm,s0x,s0xp,s0ym,s0y,s0yp,s0zm,s0z,s0zp,   &
 !$OMP                     shxm,shx,shxp,shym,shy,shyp,shzm,shz,shzp,   &

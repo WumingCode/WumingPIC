@@ -29,10 +29,11 @@ program main
 !**********************************************************************c
 
   !**** Maximum elapse time ****!o
-  etlim = 24.*60.*60.-10.*60.
+!  etlim = 72.*60.*60.-10.*60.
+  etlim = 23.*60.*60.
   !Test runs
 !  etlim = 1.*60.*60.
-!  etlim = 5.*60.
+!  etlim = 15.*60.
   !*****************************!
 
   etime0 = omp_get_wtime()
@@ -40,7 +41,7 @@ program main
   call init__set_param
   call MPI_BCAST(etime0,1,mnpr,nroot,ncomw,nerr)
 
-  loop: do it=1,itmax-it0
+  loop: do it=1,itmax-it0,2
 
      if(nrank == nroot) etime = omp_get_wtime()
      call MPI_BCAST(etime,1,mnpr,nroot,ncomw,nerr)
@@ -61,7 +62,7 @@ program main
                          c,q,r,delt,delx,                                 &
                          up,uf)
      call boundary__particle_x(gp,                                 &
-                                nxs,nxe,nys,nye,nzs,nze,np,nsp,np2)
+                               nxs,nxe,nys,nye,nzs,nze,np,nsp,np2)
      call field__fdtd_i(uf,up,gp,                                       &
                         nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,cumcnt, &
                         jup,jdown,kup,kdown,mnpr,opsum,nstat,ncomw,nerr, &
@@ -71,19 +72,50 @@ program main
                                np,nsp,np2,                          &
                                jup,jdown,kup,kdown,nstat,mnpi,mnpr,ncomw,nerr)
 
-     if(mod(it+it0,intvl2) == 0) call init__inject
+     if(mod(it+it0,intvl2) == 0) call init__inject(up)
+     if(mod(it+it0,intvl3) == 0) call init__relocate(up)
 
-     if(mod(it+it0,intvl1) == 0)                                                  &
-          call fio__output(.false.,                                               &
-                           nxgs,nxge,nygs,nyge,nzgs,nzge,nxs,nxe,nys,nye,nzs,nze, &
-                           np,nsp,np2,it,it0,                                     &
-                           nproc,nproc_i,nproc_j,nproc_k,nrank,                   &
-                           c,q,r,delt,delx,dir,                                   &
-                           up,uf)
+     call sort__bucket(gp,up,cumcnt,nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,np2)
 
-     if(mod(it+it0,intvl3) == 0) call init__relocate
+     if(mod(it+it0,intvl1) == 0)then 
+        call fio__output(.false.,                                               &
+                         nxgs,nxge,nygs,nyge,nzgs,nzge,nxs,nxe,nys,nye,nzs,nze, &
+                         np,nsp,np2,it,it0,                                     &
+                         nproc,nproc_i,nproc_j,nproc_k,nrank,                   &
+                         c,q,r,delt,delx,dir,                                   &
+                         gp,uf)
+     endif
 
-     call sort__bucket(up,cumcnt,nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,np2)
+     !it=it+1
+
+     call particle__solv(up,                                              &
+                         nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,cumcnt, &
+                         c,q,r,delt,delx,                                 &
+                         gp,uf)
+     call boundary__particle_x(up,                                 &
+                               nxs,nxe,nys,nye,nzs,nze,np,nsp,np2)
+     call field__fdtd_i(uf,gp,up,                                       &
+                        nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,cumcnt, &
+                        jup,jdown,kup,kdown,mnpr,opsum,nstat,ncomw,nerr, &
+                        q,c,delx,delt,gfac)
+     call boundary__particle_y(gp,                                  &
+                               nygs,nyge,nzgs,nzge,nys,nye,nzs,nze, &
+                               np,nsp,np2,                          &
+                               jup,jdown,kup,kdown,nstat,mnpi,mnpr,ncomw,nerr)
+
+     if(mod(it+1+it0,intvl2) == 0) call init__inject(gp)
+     if(mod(it+1+it0,intvl3) == 0) call init__relocate(gp)
+
+     call sort__bucket(up,gp,cumcnt,nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,np2)
+
+     if(mod(it+1+it0,intvl1) == 0)then
+        call fio__output(.false.,                                               &
+                         nxgs,nxge,nygs,nyge,nzgs,nzge,nxs,nxe,nys,nye,nzs,nze, &
+                         np,nsp,np2,it+1,it0,                                   &
+                         nproc,nproc_i,nproc_j,nproc_k,nrank,                   &
+                         c,q,r,delt,delx,dir,                                   &
+                         up,uf)
+     endif
 
   enddo loop
 
