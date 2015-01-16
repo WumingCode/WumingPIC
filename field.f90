@@ -412,7 +412,7 @@ contains
 
     !-----------------------------------------------------------------------
     !  #  conjugate gradient method 
-    !  #  this routine will be stoped after itaration number = ite_max
+    !  #  this routine will be stopped after iteration number = ite_max
     !-----------------------------------------------------------------------
 
     integer, intent(in)    :: nxgs, nxge, nxs, nxe, nys, nye, nzs, nze
