@@ -8,6 +8,7 @@ program main
   use particle
   use field
   use sort, only : sort__bucket
+  use mom_calc
 
   implicit none
 
@@ -30,7 +31,8 @@ program main
 
   !**** Maximum elapse time ****!o
 !  etlim = 72.*60.*60.-10.*60.
-  etlim = 23.*60.*60.
+  etlim = 24.*60.*60.-30.*60.
+!  etlim = 7.*60.*60.+30.*60.
   !Test runs
 !  etlim = 1.*60.*60.
 !  etlim = 15.*60.
@@ -49,10 +51,18 @@ program main
      if(etime-etime0 >= etlim) then
         call fio__output(.true.,                                                &
                          nxgs,nxge,nygs,nyge,nzgs,nzge,nxs,nxe,nys,nye,nzs,nze, &
-                         np,nsp,np2,it,it0,                                     &
+                         np,nsp,np2,it-1,it0,                                   &
                          nproc,nproc_i,nproc_j,nproc_k,nrank,                   &
                          c,q,r,delt,delx,dir,                                   &
                          up,uf)
+        call mom_calc__accl(gp,                                              &
+                            nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,cumcnt, &
+                            c,q,r,0.5*delt,delx,                             &
+                            up,uf)
+        call mom_calc__nvt(den,vel,temp,gp,nxgs,nxge,nys,nye,nzs,nze,np,nsp,np2,c)
+        call boundary__mom(den,vel,temp,nxgs,nxge,nys,nye,nzs,nze,nsp)
+        call fio__mom(den,vel,temp,uf,nxgs,nxge,nys,nye,nzs,nze,nsp,it-1+it0,nrank,dir)
+
         if(nrank == nroot) write(*,*) '*** elapse time over ***',it,etime-etime0
         exit loop
      endif
@@ -67,10 +77,10 @@ program main
                         nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,cumcnt, &
                         jup,jdown,kup,kdown,mnpr,opsum,nstat,ncomw,nerr, &
                         q,c,delx,delt,gfac)
-     call boundary__particle_y(up,                                  &
-                               nygs,nyge,nzgs,nzge,nys,nye,nzs,nze, &
-                               np,nsp,np2,                          &
-                               jup,jdown,kup,kdown,nstat,mnpi,mnpr,ncomw,nerr)
+     call boundary__particle_yz(up,                                  &
+                                nygs,nyge,nzgs,nzge,nys,nye,nzs,nze, &
+                                np,nsp,np2,                          &
+                                jup,jdown,kup,kdown,nstat,mnpi,mnpr,ncomw,nerr)
 
      if(mod(it+it0,intvl2) == 0) call init__inject(up)
      if(mod(it+it0,intvl3) == 0) call init__relocate(up)
@@ -86,6 +96,16 @@ program main
                          gp,uf)
      endif
 
+     if(mod(it+it0,intvl4) == 0)then 
+        call mom_calc__accl(up,                                              &
+                            nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,cumcnt, &
+                            c,q,r,0.5*delt,delx,                             &
+                            gp,uf)
+        call mom_calc__nvt(den,vel,temp,up,nxgs,nxge,nys,nye,nzs,nze,np,nsp,np2,c)
+        call boundary__mom(den,vel,temp,nxgs,nxge,nys,nye,nzs,nze,nsp)
+        call fio__mom(den,vel,temp,uf,nxgs,nxge,nys,nye,nzs,nze,nsp,it+it0,nrank,dir)
+     endif
+
      !it=it+1
 
      call particle__solv(up,                                              &
@@ -94,14 +114,14 @@ program main
                          gp,uf)
      call boundary__particle_x(up,                                 &
                                nxs,nxe,nys,nye,nzs,nze,np,nsp,np2)
-     call field__fdtd_i(uf,gp,up,                                       &
+     call field__fdtd_i(uf,gp,up,                                        &
                         nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,cumcnt, &
                         jup,jdown,kup,kdown,mnpr,opsum,nstat,ncomw,nerr, &
                         q,c,delx,delt,gfac)
-     call boundary__particle_y(gp,                                  &
-                               nygs,nyge,nzgs,nzge,nys,nye,nzs,nze, &
-                               np,nsp,np2,                          &
-                               jup,jdown,kup,kdown,nstat,mnpi,mnpr,ncomw,nerr)
+     call boundary__particle_yz(gp,                                  &
+                                nygs,nyge,nzgs,nzge,nys,nye,nzs,nze, &
+                                np,nsp,np2,                          &
+                                jup,jdown,kup,kdown,nstat,mnpi,mnpr,ncomw,nerr)
 
      if(mod(it+1+it0,intvl2) == 0) call init__inject(gp)
      if(mod(it+1+it0,intvl3) == 0) call init__relocate(gp)
@@ -115,6 +135,16 @@ program main
                          nproc,nproc_i,nproc_j,nproc_k,nrank,                   &
                          c,q,r,delt,delx,dir,                                   &
                          up,uf)
+     endif
+
+     if(mod(it+1+it0,intvl4) == 0)then
+        call mom_calc__accl(gp,                                              &
+                            nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,cumcnt, &
+                            c,q,r,0.5*delt,delx,                             &
+                            up,uf)
+        call mom_calc__nvt(den,vel,temp,gp,nxgs,nxge,nys,nye,nzs,nze,np,nsp,np2,c)
+        call boundary__mom(den,vel,temp,nxgs,nxge,nys,nye,nzs,nze,nsp)
+        call fio__mom(den,vel,temp,uf,nxgs,nxge,nys,nye,nzs,nze,nsp,it+1+it0,nrank,dir)
      endif
 
   enddo loop

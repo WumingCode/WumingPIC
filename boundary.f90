@@ -6,9 +6,10 @@ module boundary
 
   public :: boundary__field
   public :: boundary__particle_x
-  public :: boundary__particle_y
+  public :: boundary__particle_yz
   public :: boundary__curre
   public :: boundary__phi
+  public :: boundary__mom
 
 
 contains
@@ -49,10 +50,10 @@ contains
   end subroutine boundary__particle_x
 
 
-  subroutine boundary__particle_y(up,                                  &
-                                  nygs,nyge,nzgs,nzge,nys,nye,nzs,nze, &
-                                  np,nsp,np2,                          &
-                                  jup,jdown,kup,kdown,nstat,mnpi,mnpr,ncomw,nerr)
+  subroutine boundary__particle_yz(up,                                  &
+                                   nygs,nyge,nzgs,nzge,nys,nye,nzs,nze, &
+                                   np,nsp,np2,                          &
+                                   jup,jdown,kup,kdown,nstat,mnpi,mnpr,ncomw,nerr)
 
 !$  use omp_lib
     integer, intent(in)    :: nygs, nyge, nzgs, nzge, nys, nye, nzs, nze
@@ -419,7 +420,7 @@ contains
 !$  enddo
 !$OMP END PARALLEL DO
 
-  end subroutine boundary__particle_y
+  end subroutine boundary__particle_yz
 
 
   subroutine boundary__field(uf,                                &
@@ -961,6 +962,35 @@ contains
 !$OMP END PARALLEL DO
 
   end subroutine boundary__phi
+
+
+  subroutine boundary__mom(den,vel,temp,nxgs,nxge,nys,nye,nzs,nze,nsp)
+
+    integer, intent(in)    :: nxgs, nxge, nys, nye, nzs, nze, nsp
+    real(8), intent(inout) :: den(nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,nsp)
+    real(8), intent(inout) :: vel(nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,3,nsp)
+    real(8), intent(inout) :: temp(nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,3,nsp)
+
+    !reflective condition
+
+!$OMP PARALLEL WORKSHARE
+    den(nxgs  ,nys-1:nye+1,nzs-1:nze+1,1:nsp) = den(nxgs  ,nys-1:nye+1,nzs-1:nze+1,1:nsp) &
+                                               +den(nxgs-1,nys-1:nye+1,nzs-1:nze+1,1:nsp)
+    den(nxge-1,nys-1:nye+1,nzs-1:nze+1,1:nsp) = den(nxge-1,nys-1:nye+1,nzs-1:nze+1,1:nsp) &
+                                               +den(nxge  ,nys-1:nye+1,nzs-1:nze+1,1:nsp)
+
+    vel(nxgs  ,nys-1:nye+1,nzs-1:nze+1,1:3,1:nsp) = vel(nxgs  ,nys-1:nye+1,nzs-1:nze+1,1:3,1:nsp) &
+                                                   +vel(nxgs-1,nys-1:nye+1,nzs-1:nze+1,1:3,1:nsp)
+    vel(nxge-1,nys-1:nye+1,nzs-1:nze+1,1:3,1:nsp) = vel(nxge-1,nys-1:nye+1,nzs-1:nze+1,1:3,1:nsp) &
+                                                   +vel(nxge  ,nys-1:nye+1,nzs-1:nze+1,1:3,1:nsp)
+
+    temp(nxgs  ,nys-1:nye+1,nzs-1:nze+1,1:3,1:nsp) = temp(nxgs  ,nys-1:nye+1,nzs-1:nze+1,1:3,1:nsp) &
+                                                    +temp(nxgs-1,nys-1:nye+1,nzs-1:nze+1,1:3,1:nsp)
+    temp(nxge-1,nys-1:nye+1,nzs-1:nze+1,1:3,1:nsp) = temp(nxge-1,nys-1:nye+1,nzs-1:nze+1,1:3,1:nsp) &
+                                                    +temp(nxge  ,nys-1:nye+1,nzs-1:nze+1,1:3,1:nsp)
+!$OMP END PARALLEL WORKSHARE
+
+  end subroutine boundary__mom
 
 
 end module boundary

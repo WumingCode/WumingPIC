@@ -7,6 +7,7 @@ module fio
   public :: fio__output
   public :: fio__input
   public :: fio__param
+  public :: fio__mom
 
 
 contains
@@ -39,23 +40,23 @@ contains
     else
        write(filename,'(a,i7.7,a,i5.5,a)')trim(dir),it2,'_rank=',nrank,'.dat'
     endif
-    open(100+nrank,file=filename,form='unformatted')
+    open(200+nrank,file=filename,form='unformatted')
 
     !time & parameters
-    write(100+nrank)it2,nxgs,nxge,nygs,nyge,nzgs,nzge,nxs,nxe,nys,nye,nzs,nze
-    write(100+nrank)np,nsp,nproc,nproc_i,nproc_j,nproc_k
-    write(100+nrank)delt,delx,c
-    write(100+nrank)np2
-    write(100+nrank)q
-    write(100+nrank)r
+    write(200+nrank)it2,nxgs,nxge,nygs,nyge,nzgs,nzge,nxs,nxe,nys,nye,nzs,nze
+    write(200+nrank)np,nsp,nproc,nproc_i,nproc_j,nproc_k
+    write(200+nrank)delt,delx,c
+    write(200+nrank)np2
+    write(200+nrank)q
+    write(200+nrank)r
 
     !field data
-    write(100+nrank)uf
+    write(200+nrank)uf
 
     !particle data
-    write(100+nrank)up
+    write(200+nrank)up
 
-    close(100+nrank)
+    close(200+nrank)
 
   end subroutine fio__output
 
@@ -76,11 +77,11 @@ contains
     integer :: insp, inproc, inproc_i, inproc_j, inproc_k
 
     !filename
-    open(101+nrank,file=trim(dir)//trim(file),form='unformatted')
+    open(201+nrank,file=trim(dir)//trim(file),form='unformatted')
 
     !time & parameters
-    read(101+nrank)it0,inxgs,inxge,inygs,inyge,inzgs,inzge,nxs,nxe,inys,inye,inzs,inze
-    read(101+nrank)inp,insp,inproc,inproc_i,inproc_j,inproc_k
+    read(201+nrank)it0,inxgs,inxge,inygs,inyge,inzgs,inzge,nxs,nxe,inys,inye,inzs,inze
+    read(201+nrank)inp,insp,inproc,inproc_i,inproc_j,inproc_k
     if((inxgs /= nxgs) .or. (inxge /= nxge)  .or.(inygs /= nygs) .or. (inyge /= nyge)   &
         .or. (inzgs /= nzgs) .or. (inzge /= nzge) .or. (inys /= nys) .or. (inye /= nye) &
         .or. (inzs /= nzs) .or. (inze /= nze) .or. (inp /= np) .or. (insp /= nsp)       &
@@ -90,18 +91,18 @@ contains
        stop
     endif
 
-    read(101+nrank)delt,delx,c
-    read(101+nrank)np2
-    read(101+nrank)q
-    read(101+nrank)r
+    read(201+nrank)delt,delx,c
+    read(201+nrank)np2
+    read(201+nrank)q
+    read(201+nrank)r
 
     !field data
-    read(101+nrank)uf
+    read(201+nrank)uf
 
     !particle data
-    read(101+nrank)up
+    read(201+nrank)up
 
-    close(101+nrank)
+    close(201+nrank)
 
   end subroutine fio__input
 
@@ -146,6 +147,126 @@ contains
     close(9)
 
   end subroutine fio__param
+
+
+  subroutine fio__mom(den,vel,temp,uf,nxgs,nxge,nys,nye,nzs,nze,nsp,it0,irank,dir)
+
+    integer, intent(in)    :: nxgs, nxge, nys, nye, nzs, nze, nsp, it0, irank
+    real(8), intent(in)    :: uf(6,nxgs-2:nxge+2,nys-2:nye+2,nzs-2:nze+2)
+    real(8), intent(inout) :: den(nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,nsp),    &
+                              vel(nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,3,nsp),  &
+                              temp(nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,3,nsp)
+    character(len=*), intent(in) :: dir
+    integer            :: i, j, k
+    real(8)            :: tmp(nxgs:nxge,nys-1:nye+1,nzs-1:nze+1,6)
+    character(len=256) :: filename
+
+    write(filename,'(a,i7.7,a,i5.5,a)')trim(dir),it0,'_den_i_rank=',irank,'.dat'
+    open(10,file=filename,status='unknown',form='unformatted')
+    write(filename,'(a,i7.7,a,i5.5,a)')trim(dir),it0,'_den_e_rank=',irank,'.dat'
+    open(11,file=filename,status='unknown',form='unformatted')
+    write(filename,'(a,i7.7,a,i5.5,a)')trim(dir),it0,'_txx_i_rank=',irank,'.dat'
+    open(12,file=filename,status='unknown',form='unformatted')
+    write(filename,'(a,i7.7,a,i5.5,a)')trim(dir),it0,'_tyy_i_rank=',irank,'.dat'
+    open(13,file=filename,status='unknown',form='unformatted')	
+    write(filename,'(a,i7.7,a,i5.5,a)')trim(dir),it0,'_tzz_i_rank=',irank,'.dat'
+    open(14,file=filename,status='unknown',form='unformatted')
+    write(filename,'(a,i7.7,a,i5.5,a)')trim(dir),it0,'_txx_e_rank=',irank,'.dat'
+    open(15,file=filename,status='unknown',form='unformatted')
+    write(filename,'(a,i7.7,a,i5.5,a)')trim(dir),it0,'_tyy_e_rank=',irank,'.dat'
+    open(16,file=filename,status='unknown',form='unformatted')
+    write(filename,'(a,i7.7,a,i5.5,a)')trim(dir),it0,'_tzz_e_rank=',irank,'.dat'
+    open(17,file=filename,status='unknown',form='unformatted')
+
+    write(filename,'(a,i7.7,a,i5.5,a)')trim(dir),it0,'_vx_i_rank=',irank,'.dat'
+    open(18,file=filename,status='unknown',form='unformatted')
+    write(filename,'(a,i7.7,a,i5.5,a)')trim(dir),it0,'_vy_i_rank=',irank,'.dat'
+    open(19,file=filename,status='unknown',form='unformatted')
+    write(filename,'(a,i7.7,a,i5.5,a)')trim(dir),it0,'_vz_i_rank=',irank,'.dat'
+    open(20,file=filename,status='unknown',form='unformatted')
+    write(filename,'(a,i7.7,a,i5.5,a)')trim(dir),it0,'_vx_e_rank=',irank,'.dat'
+    open(21,file=filename,status='unknown',form='unformatted')
+    write(filename,'(a,i7.7,a,i5.5,a)')trim(dir),it0,'_vy_e_rank=',irank,'.dat'
+    open(22,file=filename,status='unknown',form='unformatted')
+    write(filename,'(a,i7.7,a,i5.5,a)')trim(dir),it0,'_vz_e_rank=',irank,'.dat'
+    open(23,file=filename,status='unknown',form='unformatted')
+
+    write(filename,'(a,i7.7,a,i5.5,a)')trim(dir),it0,'_bx_rank=',irank,'.dat'
+    open(24,file=filename,status='unknown',form='unformatted')
+    write(filename,'(a,i7.7,a,i5.5,a)')trim(dir),it0,'_by_rank=',irank,'.dat'
+    open(25,file=filename,status='unknown',form='unformatted')
+    write(filename,'(a,i7.7,a,i5.5,a)')trim(dir),it0,'_bz_rank=',irank,'.dat'
+    open(26,file=filename,status='unknown',form='unformatted')
+
+    write(filename,'(a,i7.7,a,i5.5,a)')trim(dir),it0,'_ex_rank=',irank,'.dat'
+    open(27,file=filename,status='unknown',form='unformatted')
+    write(filename,'(a,i7.7,a,i5.5,a)')trim(dir),it0,'_ey_rank=',irank,'.dat'
+    open(28,file=filename,status='unknown',form='unformatted')
+    write(filename,'(a,i7.7,a,i5.5,a)')trim(dir),it0,'_ez_rank=',irank,'.dat'
+    open(29,file=filename,status='unknown',form='unformatted')
+
+    !fields at (i+1/2, j+1/2, k+1/2)
+!$OMP PARALLEL DO PRIVATE(i,j,k)
+    do k=nzs,nze
+    do j=nys,nye
+    do i=nxgs,nxge-1
+       tmp(i,j,k,1) = 0.25*(+uf(1,i,j,k)  +uf(1,i,j+1,k) &
+                            +uf(1,i,j,k+1)+uf(1,i,j+1,k+1))
+       tmp(i,j,k,2) = 0.25*(+uf(2,i,j,k)  +uf(2,i+1,j,k) &
+                            +uf(2,i,j,k+1)+uf(2,i+1,j,k+1))
+       tmp(i,j,k,3) = 0.25*(+uf(3,i,j,k)  +uf(3,i+1,j,k) &
+                            +uf(3,i,j+1,k)+uf(3,i+1,j+1,k))
+       tmp(i,j,k,4) = 0.5*(+uf(4,i,j,k)+uf(4,i+1,j,k))
+       tmp(i,j,k,5) = 0.5*(+uf(5,i,j,k)+uf(5,i,j+1,k))
+       tmp(i,j,k,6) = 0.5*(+uf(6,i,j,k)+uf(6,i,j,k+1))
+    enddo
+    enddo
+    enddo
+!$OMP END PARALLEL DO
+
+    write(10)sngl(den(nxgs:nxge-1,nys-1:nye+1,nzs-1:nze+1,1))
+    write(11)sngl(den(nxgs:nxge-1,nys-1:nye+1,nzs-1:nze+1,2))
+    write(12)sngl(temp(nxgs:nxge-1,nys-1:nye+1,nzs-1:nze+1,1,1))
+    write(13)sngl(temp(nxgs:nxge-1,nys-1:nye+1,nzs-1:nze+1,2,1))
+    write(14)sngl(temp(nxgs:nxge-1,nys-1:nye+1,nzs-1:nze+1,3,1))
+    write(15)sngl(temp(nxgs:nxge-1,nys-1:nye+1,nzs-1:nze+1,1,2))
+    write(16)sngl(temp(nxgs:nxge-1,nys-1:nye+1,nzs-1:nze+1,2,2))
+    write(17)sngl(temp(nxgs:nxge-1,nys-1:nye+1,nzs-1:nze+1,3,2))
+    write(18)sngl(vel(nxgs:nxge-1,nys-1:nye+1,nzs-1:nze+1,1,1))
+    write(19)sngl(vel(nxgs:nxge-1,nys-1:nye+1,nzs-1:nze+1,2,1))
+    write(20)sngl(vel(nxgs:nxge-1,nys-1:nye+1,nzs-1:nze+1,3,1))
+    write(21)sngl(vel(nxgs:nxge-1,nys-1:nye+1,nzs-1:nze+1,1,2))
+    write(22)sngl(vel(nxgs:nxge-1,nys-1:nye+1,nzs-1:nze+1,2,2))
+    write(23)sngl(vel(nxgs:nxge-1,nys-1:nye+1,nzs-1:nze+1,3,2))
+    write(24)sngl(tmp(nxgs:nxge-1,nys:nye,nzs:nze,1))
+    write(25)sngl(tmp(nxgs:nxge-1,nys:nye,nzs:nze,2))
+    write(26)sngl(tmp(nxgs:nxge-1,nys:nye,nzs:nze,3))
+    write(27)sngl(tmp(nxgs:nxge-1,nys:nye,nzs:nze,4))
+    write(28)sngl(tmp(nxgs:nxge-1,nys:nye,nzs:nze,5))
+    write(29)sngl(tmp(nxgs:nxge-1,nys:nye,nzs:nze,6))
+    
+    close(10)
+    close(11)
+    close(12)
+    close(13)
+    close(14)
+    close(15)
+    close(16)
+    close(17)
+    close(18)
+    close(19)
+    close(20)
+    close(21)
+    close(22)
+    close(23)
+    close(24)
+    close(25)
+    close(26)
+    close(27)
+    close(28)
+    close(29)
+
+  end subroutine fio__mom
 
 
 end module fio

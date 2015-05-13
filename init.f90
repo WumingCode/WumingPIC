@@ -12,12 +12,13 @@ module init
 
   integer, public, parameter   :: nroot=0
   integer, allocatable, public :: np2(:,:,:), cumcnt(:,:,:,:)
-  integer, public              :: itmax, it0, intvl1, intvl2, intvl3
+  integer, public              :: itmax, it0, intvl1, intvl2, intvl3, intvl4
   real(8), public              :: delx, delt, gfac
   real(8), public              :: c, q(nsp), r(nsp)
   real(8), allocatable, public :: uf(:,:,:,:)
   real(8), allocatable, public :: up(:,:,:,:,:)
   real(8), allocatable, public :: gp(:,:,:,:,:)
+  real(8), allocatable, public :: den(:,:,:,:),vel(:,:,:,:,:),temp(:,:,:,:,:)
   character(len=128), public   :: dir
   real(8), save                :: pi, n0, u0, v0, b0, vti, vte, gam0, theta
 
@@ -52,6 +53,9 @@ contains
     allocate(uf(6,nxgs-2:nxge+2,nys-2:nye+2,nzs-2:nze+2))
     allocate(up(6,np,nys:nye,nzs:nze,nsp))
     allocate(gp(6,np,nys:nye,nzs:nze,nsp))
+    allocate(den(nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:nsp))
+    allocate(vel(nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:3,1:nsp))
+    allocate(temp(nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:3,1:nsp))
 !***************** End of  **********************!
 
 !*********** Random seed *************!
@@ -70,6 +74,7 @@ contains
 !   intvl1  : storage interval for particles & fields
 !   intvl2  : interval for injecting particles
 !   intvl3  : interval for updating physical region in x
+!   intvl4  : interval for recoding moment data
 !   dir     : directory name for data output
 !   file??  : output file name for unit number ??
 !           :  9 - initial parameters
@@ -81,18 +86,17 @@ contains
 !             gfac = 1.0 : Backward Euler (1st order)
 !*********************************************************************
     pi     = 4.0*atan(1.0)
-    itmax  = 200000
+    itmax  = 250000
     intvl1 = 25000
     intvl2 = 2
     intvl3 = 25
-    !for pc
-!    dir    = '../../dat/shock/test/'
-    !for oakleaf-fx@u-tokyo
-!    dir    = './shock/test/' 
+    intvl4 = 5000
+    !for xc@nao
+!    dir    = './pic3d/shock/test/'
     !for "K"
     dir    = './'
     file9  = 'init_param.dat'
-    gfac   = 0.505
+    gfac   = 0.501
     it0    = 1
 
 !*********************************************************************
@@ -175,12 +179,12 @@ contains
     b0 = fgi*r(1)*c/q(1)
 
     !Shock angle
-    theta = 60.D0 /360.D0*2.*pi
+    theta = 84.D0 /360.D0*2.*pi
     b0 = b0/sin(theta)
 
     if(it0 /= 0)then
        !start from the past calculation
-!       write(file11,'(a,i5.5,a)')'0050000_rank=',nrank,'.dat'
+!       write(file11,'(a,i5.5,a)')'0025000_rank=',nrank,'.dat'
        write(file11,'(a,i5.5,a)')'9999999_rank=',nrank,'.dat'
        call fio__input(up,uf,np2,c,q,r,delt,delx,it0,nxs,nxe,                &
                        nxgs,nxge,nygs,nyge,nzgs,nzge,nys,nye,nzs,nze,np,nsp, &

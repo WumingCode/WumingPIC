@@ -1,7 +1,7 @@
 EXEDIR = ./
 FC = mpif90
 FFLAGS = -O3 -openmp
-OBJS = fio.o particle.o field.o boundary.o mpi_set.o const.o init.o main.o sort.o
+OBJS = fio.o particle.o field.o boundary.o mpi_set.o const.o init.o main.o sort.o mom_calc.o
 
 .PHONY : all 
 .PHONY : clean
@@ -27,7 +27,7 @@ test: $(OBJS)
 
 # Dependencies
 field.o : boundary.o
-main.o : init.o const.o mpi_set.o boundary.o fio.o particle.o field.o sort.o
+main.o : init.o const.o mpi_set.o boundary.o fio.o particle.o field.o sort.o mom_calc.o
 init.o : const.o mpi_set.o boundary.o fio.o sort.o
 
 clean :
