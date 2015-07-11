@@ -43,7 +43,7 @@ program main
   call init__set_param
   call MPI_BCAST(etime0,1,mnpr,nroot,ncomw,nerr)
 
-  loop: do it=1,itmax-it0,2
+  loop: do it=1,itmax-it0
 
      if(nrank == nroot) etime = omp_get_wtime()
      call MPI_BCAST(etime,1,mnpr,nroot,ncomw,nerr)
@@ -77,15 +77,15 @@ program main
                         nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,cumcnt, &
                         jup,jdown,kup,kdown,mnpr,opsum,nstat,ncomw,nerr, &
                         q,c,delx,delt,gfac)
-     call boundary__particle_yz(up,                                  &
+     call boundary__particle_yz(gp,                                  &
                                 nygs,nyge,nzgs,nzge,nys,nye,nzs,nze, &
                                 np,nsp,np2,                          &
                                 jup,jdown,kup,kdown,nstat,mnpi,mnpr,ncomw,nerr)
 
-     if(mod(it+it0,intvl2) == 0) call init__inject(up)
-     if(mod(it+it0,intvl3) == 0) call init__relocate(up)
+     if(mod(it+it0,intvl2) == 0) call init__inject
+     if(mod(it+it0,intvl3) == 0) call init__relocate
 
-     call sort__bucket(gp,up,cumcnt,nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,np2)
+     call sort__bucket(up,gp,cumcnt,nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,np2)
 
      if(mod(it+it0,intvl1) == 0)then 
         call fio__output(.false.,                                               &
@@ -93,58 +93,17 @@ program main
                          np,nsp,np2,it,it0,                                     &
                          nproc,nproc_i,nproc_j,nproc_k,nrank,                   &
                          c,q,r,delt,delx,dir,                                   &
-                         gp,uf)
-     endif
-
-     if(mod(it+it0,intvl4) == 0)then 
-        call mom_calc__accl(up,                                              &
-                            nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,cumcnt, &
-                            c,q,r,0.5*delt,delx,                             &
-                            gp,uf)
-        call mom_calc__nvt(den,vel,temp,up,nxgs,nxge,nys,nye,nzs,nze,np,nsp,np2,c)
-        call boundary__mom(den,vel,temp,nxgs,nxge,nys,nye,nzs,nze,nsp)
-        call fio__mom(den,vel,temp,uf,nxgs,nxge,nys,nye,nzs,nze,nsp,it+it0,nrank,dir)
-     endif
-
-     !it=it+1
-
-     call particle__solv(up,                                              &
-                         nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,cumcnt, &
-                         c,q,r,delt,delx,                                 &
-                         gp,uf)
-     call boundary__particle_x(up,                                 &
-                               nxs,nxe,nys,nye,nzs,nze,np,nsp,np2)
-     call field__fdtd_i(uf,gp,up,                                        &
-                        nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,cumcnt, &
-                        jup,jdown,kup,kdown,mnpr,opsum,nstat,ncomw,nerr, &
-                        q,c,delx,delt,gfac)
-     call boundary__particle_yz(gp,                                  &
-                                nygs,nyge,nzgs,nzge,nys,nye,nzs,nze, &
-                                np,nsp,np2,                          &
-                                jup,jdown,kup,kdown,nstat,mnpi,mnpr,ncomw,nerr)
-
-     if(mod(it+1+it0,intvl2) == 0) call init__inject(gp)
-     if(mod(it+1+it0,intvl3) == 0) call init__relocate(gp)
-
-     call sort__bucket(up,gp,cumcnt,nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,np2)
-
-     if(mod(it+1+it0,intvl1) == 0)then
-        call fio__output(.false.,                                               &
-                         nxgs,nxge,nygs,nyge,nzgs,nzge,nxs,nxe,nys,nye,nzs,nze, &
-                         np,nsp,np2,it+1,it0,                                   &
-                         nproc,nproc_i,nproc_j,nproc_k,nrank,                   &
-                         c,q,r,delt,delx,dir,                                   &
                          up,uf)
      endif
 
-     if(mod(it+1+it0,intvl4) == 0)then
+     if(mod(it+it0,intvl4) == 0)then 
         call mom_calc__accl(gp,                                              &
                             nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,cumcnt, &
                             c,q,r,0.5*delt,delx,                             &
                             up,uf)
         call mom_calc__nvt(den,vel,temp,gp,nxgs,nxge,nys,nye,nzs,nze,np,nsp,np2,c)
         call boundary__mom(den,vel,temp,nxgs,nxge,nys,nye,nzs,nze,nsp)
-        call fio__mom(den,vel,temp,uf,nxgs,nxge,nys,nye,nzs,nze,nsp,it+1+it0,nrank,dir)
+        call fio__mom(den,vel,temp,uf,nxgs,nxge,nys,nye,nzs,nze,nsp,it+it0,nrank,dir)
      endif
 
   enddo loop

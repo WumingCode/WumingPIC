@@ -24,7 +24,7 @@ contains
     integer, intent(inout) :: nerr, nstat(:)
     real(8), intent(in)    :: q(nsp), c, delx, delt, gfac
     real(8), intent(in)    :: gp(6,np,nys:nye,nzs:nze,nsp)
-    real(8), intent(inout) :: up(6,np,nys:nye,nzs:nze,nsp)
+    real(8), intent(in)    :: up(6,np,nys:nye,nzs:nze,nsp)
     real(8), intent(inout) :: uf(6,nxgs-2:nxge+2,nys-2:nye+2,nzs-2:nze+2)
     logical, save              :: lflag=.true.
     integer                    :: i, j, k, ieq
@@ -134,12 +134,12 @@ contains
                      nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,cumcnt, &
                      q,delx,delt)
 
-    integer, intent(in)    :: nxgs, nxge, nxs, nxe, nys, nye, nzs, nze, np, nsp 
-    integer, intent(in)    :: cumcnt(nxgs:nxge,nys:nye,nzs:nze,nsp)
-    real(8), intent(in)    :: q(nsp), delx, delt
-    real(8), intent(in)    :: gp(6,np,nys:nye,nzs:nze,nsp)
-    real(8), intent(inout) :: up(6,np,nys:nye,nzs:nze,nsp)
-    real(8), intent(out)   :: uj(3,nxs-2:nxe+2,nys-2:nye+2,nzs-2:nze+2)
+    integer, intent(in)  :: nxgs, nxge, nxs, nxe, nys, nye, nzs, nze, np, nsp 
+    integer, intent(in)  :: cumcnt(nxgs:nxge,nys:nye,nzs:nze,nsp)
+    real(8), intent(in)  :: q(nsp), delx, delt
+    real(8), intent(in)  :: gp(6,np,nys:nye,nzs:nze,nsp)
+    real(8), intent(in)  :: up(6,np,nys:nye,nzs:nze,nsp)
+    real(8), intent(out) :: uj(3,nxs-2:nxe+2,nys-2:nye+2,nzs-2:nze+2)
 
     integer            :: ii, i, j, k, isp, i2, inc, ip, jp, kp
     real(8), parameter :: fac = 1.D0/3.D0
@@ -246,13 +246,6 @@ contains
           dsy(-2:2) = dsy(-2:2)-s0y(-2:2)
           dsz(-2:2) = dsz(-2:2)-s0z(-2:2)
 
-          up(1,ii,j,k,isp) = gp(1,ii,j,k,isp)
-          up(2,ii,j,k,isp) = gp(2,ii,j,k,isp)
-          up(3,ii,j,k,isp) = gp(3,ii,j,k,isp)
-          up(4,ii,j,k,isp) = gp(4,ii,j,k,isp)
-          up(5,ii,j,k,isp) = gp(5,ii,j,k,isp)
-          up(6,ii,j,k,isp) = gp(6,ii,j,k,isp)
-
 !OCL UNROLL('FULL')
           do kp=-2,2
           do jp=-2,2
@@ -352,13 +345,6 @@ contains
           dsx(-2:2) = dsx(-2:2)-s0x(-2:2)
           dsy(-2:2) = dsy(-2:2)-s0y(-2:2)
           dsz(-2:2) = dsz(-2:2)-s0z(-2:2)
-
-          up(1,ii,j,k,isp) = gp(1,ii,j,k,isp)
-          up(2,ii,j,k,isp) = gp(2,ii,j,k,isp)
-          up(3,ii,j,k,isp) = gp(3,ii,j,k,isp)
-          up(4,ii,j,k,isp) = gp(4,ii,j,k,isp)
-          up(5,ii,j,k,isp) = gp(5,ii,j,k,isp)
-          up(6,ii,j,k,isp) = gp(6,ii,j,k,isp)
 
 !OCL UNROLL('FULL')
           do kp=-2,2

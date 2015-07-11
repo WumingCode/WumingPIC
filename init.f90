@@ -186,15 +186,11 @@ contains
        !start from the past calculation
 !       write(file11,'(a,i5.5,a)')'0025000_rank=',nrank,'.dat'
        write(file11,'(a,i5.5,a)')'9999999_rank=',nrank,'.dat'
-       call fio__input(up,uf,np2,c,q,r,delt,delx,it0,nxs,nxe,                &
+       call fio__input(gp,uf,np2,c,q,r,delt,delx,it0,nxs,nxe,                &
                        nxgs,nxge,nygs,nyge,nzgs,nzge,nys,nye,nzs,nze,np,nsp, &
                        nproc,nproc_i,nproc_j,nproc_k,nrank,                  &
                        dir,file11)
-       call sort__bucket(gp,up,cumcnt,nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,np2)
-
-!$OMP PARALLEL WORKSHARE
-       up(1:6,1:np,nys:nye,nzs:nze,1:nsp)=gp(1:6,1:np,nys:nye,nzs:nze,1:nsp)
-!$OMP END PARALLEL WORKSHARE
+       call sort__bucket(up,gp,cumcnt,nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,np2)
 
        return
     endif
@@ -304,12 +300,11 @@ contains
   end subroutine init__loading
 
 
-  subroutine init__relocate(upp)
+  subroutine init__relocate
 
     use boundary, only : boundary__field
 !$  use omp_lib
 
-    real(8), intent(out) :: upp(6,np,nys:nye,nzs:nze,nsp)
     integer :: dn, isp, j, k, ii, ii2 ,ii3
     real(8) :: aa, bb, cc, sd, gamp
 
@@ -326,16 +321,16 @@ contains
           ii2 = np2(j,k,1)+ii
           ii3 = np2(j,k,2)+ii
 
-          upp(1,ii2,j,k,1) = (nxe-1)*delx+delx*ii/(dn+1)
-          upp(1,ii3,j,k,2) = upp(1,ii2,j,k,1)
+          gp(1,ii2,j,k,1) = (nxe-1)*delx+delx*ii/(dn+1)
+          gp(1,ii3,j,k,2) = gp(1,ii2,j,k,1)
 
           call random_number(aa)
-          upp(2,ii2,j,k,1) = dble(j)*delx+delx*aa
-          upp(2,ii3,j,k,2) = upp(2,ii2,j,k,1)
+          gp(2,ii2,j,k,1) = dble(j)*delx+delx*aa
+          gp(2,ii3,j,k,2) = gp(2,ii2,j,k,1)
 
           call random_number(aa)
-          upp(3,ii2,j,k,1) = dble(k)*delx+delx*aa
-          upp(3,ii3,j,k,2) = upp(3,ii2,j,k,1)
+          gp(3,ii2,j,k,1) = dble(k)*delx+delx*aa
+          gp(3,ii3,j,k,2) = gp(3,ii2,j,k,1)
        enddo
     enddo
     enddo
@@ -363,20 +358,20 @@ contains
              call random_number(bb)
              call random_number(cc)
              
-             upp(4,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*(2.*bb-1)
-             upp(5,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*cos(2.*pi*cc)
-             upp(6,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*sin(2.*pi*cc)
-             gamp = dsqrt(1.D0+(upp(4,ii,j,k,isp)**2+upp(5,ii,j,k,isp)**2+upp(6,ii,j,k,isp)**2)/c**2)
+             gp(4,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*(2.*bb-1)
+             gp(5,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*cos(2.*pi*cc)
+             gp(6,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*sin(2.*pi*cc)
+             gamp = dsqrt(1.D0+(gp(4,ii,j,k,isp)**2+gp(5,ii,j,k,isp)**2+gp(6,ii,j,k,isp)**2)/c**2)
 
              call random_number(cc)
 
-             if(upp(4,ii,j,k,isp)*v0 >= 0.)then
-                upp(4,ii,j,k,isp) = (+upp(4,ii,j,k,isp)+v0*gamp)*gam0
+             if(gp(4,ii,j,k,isp)*v0 >= 0.)then
+                gp(4,ii,j,k,isp) = (+gp(4,ii,j,k,isp)+v0*gamp)*gam0
              else
-                if(cc < (-v0*upp(4,ii,j,k,isp)/gamp))then
-                   upp(4,ii,j,k,isp) = (-upp(4,ii,j,k,isp)+v0*gamp)*gam0
+                if(cc < (-v0*gp(4,ii,j,k,isp)/gamp))then
+                   gp(4,ii,j,k,isp) = (-gp(4,ii,j,k,isp)+v0*gamp)*gam0
                 else
-                   upp(4,ii,j,k,isp) = (+upp(4,ii,j,k,isp)+v0*gamp)*gam0
+                   gp(4,ii,j,k,isp) = (+gp(4,ii,j,k,isp)+v0*gamp)*gam0
                 endif
              endif
           enddo
@@ -411,11 +406,10 @@ contains
   end subroutine init__relocate
 
 
-  subroutine init__inject(upp)
+  subroutine init__inject
 
     use boundary, only : boundary__field
 
-    real(8), intent(out) :: upp(6,np,nys:nye,nzs:nze,nsp)
     integer :: isp, ii, ii2, ii3, j, k, dn
     real(8) :: sd, aa, bb, cc, dx, gamp
 
@@ -431,16 +425,16 @@ contains
           ii2 = np2(j,k,1)+ii
           ii3 = np2(j,k,2)+ii
 
-          upp(1,ii2,j,k,1) = nxe*delx+dx*(dn-ii+1)/(dn+1)
-          upp(1,ii3,j,k,2) = upp(1,ii2,j,k,1)
+          gp(1,ii2,j,k,1) = nxe*delx+dx*(dn-ii+1)/(dn+1)
+          gp(1,ii3,j,k,2) = gp(1,ii2,j,k,1)
 
           call random_number(aa)
-          upp(2,ii2,j,k,1) = dble(j)*delx+delx*aa
-          upp(2,ii3,j,k,2) = upp(2,ii2,j,k,1)
+          gp(2,ii2,j,k,1) = dble(j)*delx+delx*aa
+          gp(2,ii3,j,k,2) = gp(2,ii2,j,k,1)
 
           call random_number(aa)
-          upp(3,ii2,j,k,1) = dble(k)*delx+delx*aa
-          upp(3,ii3,j,k,2) = upp(3,ii2,j,k,1)
+          gp(3,ii2,j,k,1) = dble(k)*delx+delx*aa
+          gp(3,ii3,j,k,2) = gp(3,ii2,j,k,1)
        enddo
     enddo
     enddo
@@ -468,20 +462,20 @@ contains
              call random_number(bb)
              call random_number(cc)
 
-             upp(4,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*(2.*bb-1)
-             upp(5,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*cos(2.*pi*cc)
-             upp(6,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*sin(2.*pi*cc)
-             gamp = dsqrt(1.D0+(upp(4,ii,j,k,isp)**2+upp(5,ii,j,k,isp)**2+upp(6,ii,j,k,isp)**2)/c**2)
+             gp(4,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*(2.*bb-1)
+             gp(5,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*cos(2.*pi*cc)
+             gp(6,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*sin(2.*pi*cc)
+             gamp = dsqrt(1.D0+(gp(4,ii,j,k,isp)**2+gp(5,ii,j,k,isp)**2+gp(6,ii,j,k,isp)**2)/c**2)
 
              call random_number(cc)
 
-             if(upp(4,ii,j,k,isp)*v0 >= 0.)then
-                upp(4,ii,j,k,isp) = (+upp(4,ii,j,k,isp)+v0*gamp)*gam0
+             if(gp(4,ii,j,k,isp)*v0 >= 0.)then
+                gp(4,ii,j,k,isp) = (+gp(4,ii,j,k,isp)+v0*gamp)*gam0
              else
-                if(cc < (-v0*upp(4,ii,j,k,isp)/gamp))then
-                   upp(4,ii,j,k,isp) = (-upp(4,ii,j,k,isp)+v0*gamp)*gam0
+                if(cc < (-v0*gp(4,ii,j,k,isp)/gamp))then
+                   gp(4,ii,j,k,isp) = (-gp(4,ii,j,k,isp)+v0*gamp)*gam0
                 else
-                   upp(4,ii,j,k,isp) = (+upp(4,ii,j,k,isp)+v0*gamp)*gam0
+                   gp(4,ii,j,k,isp) = (+gp(4,ii,j,k,isp)+v0*gamp)*gam0
                 endif
              endif
           enddo
