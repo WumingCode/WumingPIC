@@ -2,6 +2,7 @@ module mpi_set
 
   implicit none
   private
+
   public :: mpi_set__init
 
   include 'mpif.h'
@@ -13,16 +14,16 @@ module mpi_set
   integer, public            :: nerr, ncomw, nstat(MPI_STATUS_SIZE)
   integer, public            :: nrank, nrank_i, nrank_j, nrank_k
   integer, public            :: iup, idown, jup, jdown, kup, kdown
-  integer, public            :: nxs, nxe, nys, nye, nzs, nze
+  integer, public            :: nys, nye, nzs, nze
 
 
 contains
 
 
-  subroutine mpi_set__init(nxgs,nxge,nygs,nyge,nzgs,nzge, &
+  subroutine mpi_set__init(nygs,nyge,nzgs,nzge, &
                            nproc,nproc_i,nproc_j,nproc_k)
 
-    integer, intent(in) :: nxgs, nxge, nygs, nyge, nzgs, nzge
+    integer, intent(in) :: nygs, nyge, nzgs, nzge
     integer, intent(in) :: nproc, nproc_i, nproc_j, nproc_k
     integer             :: i, j, k, irank, nsize 
     integer             :: ptable(-1:nproc_i,-1:nproc_j,-1:nproc_k)
@@ -67,7 +68,6 @@ contains
     enddo
     enddo
 
-    call para_range(nxs,nxe,nxgs,nxge,nproc_i,nrank_i)
     call para_range(nys,nye,nygs,nyge,nproc_j,nrank_j)
     call para_range(nzs,nze,nzgs,nzge,nproc_k,nrank_k)
 

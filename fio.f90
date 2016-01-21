@@ -108,14 +108,14 @@ contains
 
 
   subroutine fio__param(nxgs,nxge,nygs,nyge,nzgs,nzge,nys,nye,nzs,nze, &
-                        np,nsp,np2,                                    &
-                        c,q,r,n0,temp,rtemp,fpe,fge,                   &
+                        np,nsp,np2,n0,                                 &
+                        c,q,r,temp,rtemp,fpe,fge,                      &
                         ldb,delt,delx,dir,file)
 
     integer, intent(in)          :: nxgs, nxge, nygs, nyge, nzgs, nzge, nys, nye, nzs, nze
-    integer, intent(in)          :: np, nsp 
+    integer, intent(in)          :: np, nsp, n0
     integer, intent(in)          :: np2(nys:nye,nzs:nze,nsp)
-    real(8), intent(in)          :: c, q(nsp), r(nsp), n0, temp, rtemp, fpe, fge, ldb, delt, delx
+    real(8), intent(in)          :: c, q(nsp), r(nsp), temp, rtemp, fpe, fge, ldb, delt, delx
     character(len=*), intent(in) :: dir, file
     integer :: isp
     real(8) :: pi, vti, vte, va
@@ -158,7 +158,6 @@ contains
                               temp(nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,3,nsp)
     character(len=*), intent(in) :: dir
     integer            :: i, j, k
-    real(8)            :: tmp(nxgs:nxge,nys-1:nye+1,nzs-1:nze+1,6)
     character(len=256) :: filename
 
     write(filename,'(a,i7.7,a,i5.5,a)')trim(dir),it0,'_den_i_rank=',irank,'.dat'
@@ -205,25 +204,6 @@ contains
     write(filename,'(a,i7.7,a,i5.5,a)')trim(dir),it0,'_ez_rank=',irank,'.dat'
     open(29,file=filename,status='unknown',form='unformatted')
 
-    !fields at (i+1/2, j+1/2, k+1/2)
-!$OMP PARALLEL DO PRIVATE(i,j,k)
-    do k=nzs,nze
-    do j=nys,nye
-    do i=nxgs,nxge-1
-       tmp(i,j,k,1) = 0.25*(+uf(1,i,j,k)  +uf(1,i,j+1,k) &
-                            +uf(1,i,j,k+1)+uf(1,i,j+1,k+1))
-       tmp(i,j,k,2) = 0.25*(+uf(2,i,j,k)  +uf(2,i+1,j,k) &
-                            +uf(2,i,j,k+1)+uf(2,i+1,j,k+1))
-       tmp(i,j,k,3) = 0.25*(+uf(3,i,j,k)  +uf(3,i+1,j,k) &
-                            +uf(3,i,j+1,k)+uf(3,i+1,j+1,k))
-       tmp(i,j,k,4) = 0.5*(+uf(4,i,j,k)+uf(4,i+1,j,k))
-       tmp(i,j,k,5) = 0.5*(+uf(5,i,j,k)+uf(5,i,j+1,k))
-       tmp(i,j,k,6) = 0.5*(+uf(6,i,j,k)+uf(6,i,j,k+1))
-    enddo
-    enddo
-    enddo
-!$OMP END PARALLEL DO
-
     write(10)sngl(den(nxgs:nxge-1,nys-1:nye+1,nzs-1:nze+1,1))
     write(11)sngl(den(nxgs:nxge-1,nys-1:nye+1,nzs-1:nze+1,2))
     write(12)sngl(temp(nxgs:nxge-1,nys-1:nye+1,nzs-1:nze+1,1,1))
@@ -238,12 +218,12 @@ contains
     write(21)sngl(vel(nxgs:nxge-1,nys-1:nye+1,nzs-1:nze+1,1,2))
     write(22)sngl(vel(nxgs:nxge-1,nys-1:nye+1,nzs-1:nze+1,2,2))
     write(23)sngl(vel(nxgs:nxge-1,nys-1:nye+1,nzs-1:nze+1,3,2))
-    write(24)sngl(tmp(nxgs:nxge-1,nys:nye,nzs:nze,1))
-    write(25)sngl(tmp(nxgs:nxge-1,nys:nye,nzs:nze,2))
-    write(26)sngl(tmp(nxgs:nxge-1,nys:nye,nzs:nze,3))
-    write(27)sngl(tmp(nxgs:nxge-1,nys:nye,nzs:nze,4))
-    write(28)sngl(tmp(nxgs:nxge-1,nys:nye,nzs:nze,5))
-    write(29)sngl(tmp(nxgs:nxge-1,nys:nye,nzs:nze,6))
+    write(24)sngl(uf(1,nxgs:nxge,nys:nye,nzs:nze))
+    write(25)sngl(uf(2,nxgs:nxge,nys:nye,nzs:nze))
+    write(26)sngl(uf(3,nxgs:nxge,nys:nye,nzs:nze))
+    write(27)sngl(uf(4,nxgs:nxge,nys:nye,nzs:nze))
+    write(28)sngl(uf(5,nxgs:nxge,nys:nye,nzs:nze))
+    write(29)sngl(uf(6,nxgs:nxge,nys:nye,nzs:nze))
     
     close(10)
     close(11)

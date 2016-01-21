@@ -3,17 +3,19 @@ program main
   use const
   use mpi_set
   use init
-  use boundary
-  use fio
+  use boundary, only : boundary__particle_x, boundary__particle_yz, &
+                       boundary__mom
+  use fio, only : fio__mom, fio__output
   use particle
   use field
   use sort, only : sort__bucket
   use mom_calc
+  use omp_lib
 
   implicit none
 
   integer :: it=0
-  real(8) :: etime, etlim, etime0, omp_get_wtime
+  real(8) :: etime, etime0
 
 !**********************************************************************c
 !
@@ -26,17 +28,9 @@ program main
 !    MPI parallelization (by Y. Matsumoto, STEL)  2009/4/1
 !    2-D code            (by Y. Matsumoto, STEL)  2009/6/5
 !    3-D code            (by Y. Matsumoto, Chiba-U) 2012/10/5
+!    3-D code w SIMD     (by Y. Matsumoto, Chiba-U) 2013/4/1
 !
 !**********************************************************************c
-
-  !**** Maximum elapse time ****!o
-!  etlim = 72.*60.*60.-10.*60.
-  etlim = 24.*60.*60.-30.*60.
-!  etlim = 7.*60.*60.+30.*60.
-  !Test runs
-!  etlim = 1.*60.*60.
-!  etlim = 15.*60.
-  !*****************************!
 
   etime0 = omp_get_wtime()
 
@@ -71,15 +65,15 @@ program main
                          nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,cumcnt, &
                          c,q,r,delt,delx,                                 &
                          up,uf)
-     call boundary__particle_x(gp,                                 &
-                               nxs,nxe,nys,nye,nzs,nze,np,nsp,np2)
-     call field__fdtd_i(uf,up,gp,                                       &
+     call boundary__particle_x(gp,                                     &
+                               nxs,nxe,nys,nye,nzs,nze,np,nsp,np2,delx)
+     call field__fdtd_i(uf,up,gp,                                        &
                         nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,cumcnt, &
                         jup,jdown,kup,kdown,mnpr,opsum,nstat,ncomw,nerr, &
                         q,c,delx,delt,gfac)
      call boundary__particle_yz(gp,                                  &
                                 nygs,nyge,nzgs,nzge,nys,nye,nzs,nze, &
-                                np,nsp,np2,                          &
+                                np,nsp,np2,delx,                     &
                                 jup,jdown,kup,kdown,nstat,mnpi,mnpr,ncomw,nerr)
 
      if(mod(it+it0,intvl2) == 0) call init__inject
