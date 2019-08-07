@@ -26,7 +26,7 @@ module const
 
 !! SETUP FOR MAIN PROGRAM & SUBROUTINES
   integer, parameter :: itmax   = 20000    !NUMBER OF ITERATION
-  integer            :: it0     = 9999999	!0:INITIAL, NONZERO/9999999: RESTART DATA
+  integer            :: it0     = 0	!0:INITIAL, NONZERO/9999999: RESTART DATA
   integer, parameter :: intvl1  = 4000    !INTERVAL FOR PARTICLES & FIELDS STORAGE          
   integer, parameter :: intvl2  = 1         !INTERVAL FOR INJECTING PARTICLES
   integer, parameter :: intvl3  = 1         !INTERVAL FOR EXPANDING PHYSICAL REGION IN X

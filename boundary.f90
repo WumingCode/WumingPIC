@@ -7,6 +7,7 @@ module boundary
   public :: boundary__dfield
   public :: boundary__particle_x
   public :: boundary__particle_yz
+  public :: boundary__particle_injection
   public :: boundary__curre
   public :: boundary__phi
   public :: boundary__mom
@@ -23,7 +24,10 @@ contains
     real(8), intent(in)    :: delx
     real(8), intent(inout) :: up(6,np,nys:nye,nzs:nze,nsp)
     integer                :: j, k, ii, isp, ipos
+    real(8)                :: d_delx
 
+    d_delx = 1.D0/delx
+    
     do isp=1,nsp
 
 !$OMP PARALLEL DO PRIVATE(ii,j,k,ipos)
@@ -31,7 +35,7 @@ contains
        do j=nys,nye
           do ii=1,np2(j,k,isp)
 
-             ipos = int(up(1,ii,j,k,isp)/delx)
+             ipos = int(up(1,ii,j,k,isp)*d_delx)
 
              if(ipos <= nxs-1)then
                 up(1,ii,j,k,isp) = 2.0*nxs*delx-up(1,ii,j,k,isp)
@@ -49,6 +53,52 @@ contains
     enddo
 
   end subroutine boundary__particle_x
+
+
+  subroutine boundary__particle_injection(up,                                 &
+                                          nxs,nxe,nys,nye,nzs,nze,np,nsp,np2, &
+                                          itcheck2,itcheck3,                  &
+                                          delx,delt,u0,c)
+
+    integer, intent(in)    :: nxs, nxe, nys, nye, nzs, nze, np, nsp, itcheck2, itcheck3
+    integer, intent(in)    :: np2(nys:nye,nzs:nze,nsp)
+    real(8), intent(in)    :: delx, delt,u0, c
+    real(8), intent(inout) :: up(6,np,nys:nye,nzs:nze,nsp)
+    integer                :: j, k, ii, isp, ipos
+    real(8)                :: xend, d_delx
+
+    xend = nxe*delx+u0/sqrt(1.+(u0/c)**2)*delt*min(itcheck2,itcheck3)
+    d_delx = 1.D0/delx
+    
+    do isp=1,nsp
+
+!$OMP PARALLEL DO PRIVATE(ii,j,k,ipos)
+       do k=nzs,nze
+       do j=nys,nye
+          do ii=1,np2(j,k,isp)
+
+             ipos = int(up(1,ii,j,k,isp)*d_delx)
+
+             if(ipos < nxs+1)then
+                up(1,ii,j,k,isp) = 2.*(nxs+1)*delx-up(1,ii,j,k,isp)
+                up(4,ii,j,k,isp) = -up(4,ii,j,k,isp)
+                up(5,ii,j,k,isp) = -up(5,ii,j,k,isp)
+                up(6,ii,j,k,isp) = -up(6,ii,j,k,isp)
+             else if(up(1,ii,j,k,isp) > xend)then
+                up(1,ii,j,k,isp) = 2.*xend-up(1,ii,j,k,isp)
+                up(4,ii,j,k,isp) = 2.*u0-up(4,ii,j,k,isp)
+                up(5,ii,j,k,isp) = -up(5,ii,j,k,isp)
+                up(6,ii,j,k,isp) = -up(6,ii,j,k,isp)
+             endif
+
+          enddo
+       enddo
+       enddo
+!$OMP END PARALLEL DO
+
+    enddo
+
+  end subroutine boundary__particle_injection
 
 
   subroutine boundary__particle_yz(up,                                  &

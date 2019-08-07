@@ -3,8 +3,8 @@ program main
   use const
   use mpi_set
   use init
-  use boundary, only : boundary__particle_x, boundary__particle_yz, &
-                       boundary__mom
+  use boundary, only : boundary__particle_yz, &
+                       boundary__mom, boundary__particle_injection
   use fio, only : fio__mom, fio__output
   use particle
   use field
@@ -55,9 +55,8 @@ program main
                             up,uf)
         call mom_calc__nvt(den,vel,temp,gp,nxgs,nxge,nys,nye,nzs,nze,np,nsp,np2,c)
         call boundary__mom(den,vel,temp,nxgs,nxge,nys,nye,nzs,nze,nsp)
-        call fio__mom(den,vel,temp,uf,nxgs,nxge,nys,nye,nzs,nze,nsp,it-1+it0,nrank,dir)
-
-        if(nrank == nroot) write(*,*) '*** elapse time over ***',it,etime-etime0
+        call fio__mom(den,vel,temp,uf,nxgs,nxge,nys,nye,nzs,nze,nsp,it-1+it0,nrank,dir)                         
+        if(nrank == nroot) write(*,*) '*** elapse time over ***',it-1+it0,etime-etime0
         exit loop
      endif
 
@@ -65,8 +64,10 @@ program main
                          nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,cumcnt, &
                          c,q,r,delt,delx,                                 &
                          up,uf)
-     call boundary__particle_x(gp,                                     &
-                               nxs,nxe,nys,nye,nzs,nze,np,nsp,np2,delx)
+     call boundary__particle_injection(gp,                                        &
+                                       nxs,nxe,nys,nye,nzs,nze,np,nsp,np2,        &
+                                       mod(it+it0-1,intvl2),mod(it+it0-1,intvl3), &
+                                       delx,delt,u0,c)
      call field__fdtd_i(uf,up,gp,                                        &
                         nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,cumcnt, &
                         jup,jdown,kup,kdown,mnpr,opsum,nstat,ncomw,nerr, &
@@ -76,10 +77,10 @@ program main
                                 np,nsp,np2,delx,                     &
                                 jup,jdown,kup,kdown,nstat,mnpi,mnpr,ncomw,nerr)
 
-     if(mod(it+it0,intvl2) == 0) call init__inject
-     if(mod(it+it0,intvl3) == 0) call init__relocate
+     call sort__bucket(up,gp,cumcnt,nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,np2,delx)
 
-     call sort__bucket(up,gp,cumcnt,nxgs,nxge,nxs,nxe,nys,nye,nzs,nze,np,nsp,np2)
+     if(mod(it+it0,intvl2) == 0) call init__inject(it+it0)
+     if(mod(it+it0,intvl3) == 0) call init__relocate(it+it0)
 
      if(mod(it+it0,intvl1) == 0)then 
         call fio__output(.false.,                                               &

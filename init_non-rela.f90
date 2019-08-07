@@ -17,7 +17,7 @@ module init
   real(8), allocatable, public :: gp(:,:,:,:,:)
   real(8), allocatable, public :: den(:,:,:,:),vel(:,:,:,:,:),temp(:,:,:,:,:)
   real(8), parameter           :: pi = 4.0D0*datan(1.0D0), deg2rad = pi/180.0D0
-  real(8), save                :: v0, b0
+  real(8), save                :: v0, b0, vti, vte, gam0
 
 
 contains
@@ -30,7 +30,7 @@ contains
 
     integer              :: n, i, j, k, isp
     integer, allocatable :: seed(:)
-    real(8)              :: fpe
+    real(8)              :: fgi, fpi, fpe, fge, va, rgi, rge, ldb
     character(len=128)   :: file11
 
 !************** MPI settings  *******************!
@@ -63,19 +63,29 @@ contains
     r(2) = 1.0D0      ! ELECTRON MASS
     r(1) = r(2)*mr    ! ION MASS
     delt = cfl*delx/c ! TIME STEP SIZE
-    fpe  = c/delx/rdbl*sqrt(gam0)	! ELE. PLASMA FREQ. IN SIM. FRAME
-    ldmp = c/fpe*sqrt(gam0)*ldmp	! INITIAL VELOCITY PROFILE NEAR X=0
+    ldb  = delx*rdbl
+    fpe  = dsqrt(beta*rtemp)*c/(dsqrt(2.D0)*alpha*ldb)
+    fge  = fpe/alpha
+    fgi  = fge*r(2)/r(1)
+    fpi  = fpe*dsqrt(r(2)/r(1))
+    va   = fge/fpe*c*dsqrt(r(2)/r(1))
+    rge  = alpha*ldb*dsqrt(2.D0)
+    rgi  = rge*dsqrt(r(1)/r(2))/dsqrt(rtemp)
+    vte  = rge*fge
+    vti  = vte*dsqrt(r(2)/r(1))/dsqrt(rtemp)
 
     !CHARGE
-    q(2) = -fpe*sqrt(r(2)/(4.0D0*pi*n0/delx**2))
-    q(1) = -q(2)
+    q(1) = fpi*dsqrt(r(1)/(4.0D0*pi*n0))
+    q(2) = -q(1)
 
     !MAGNETIC FIELD STRENGTH
-    b0 = sqrt(sig0*4.0D0*pi*r(1)*n0*gam0*c**2)
+    b0 = fgi*r(1)*c/q(1)
+    b0 = b0/sin(84.D0*deg2rad)
 
     !INJECTOR IS ON THE RIGHT-HAND-SIDE; MINUS SIGN IS NECESSARY
-    v0   = -c*sqrt(1.0D0-1.0D0/gam0**2)
-    u0   = v0*gam0
+    v0   = -ma*va
+    u0   = v0/dsqrt(1.-(v0/c)**2)
+    gam0 = dsqrt(1.+u0**2/c**2)
 
     !INITIAL NUMBER OF PARTICLES IN COLUMN AT (Y, Z)
     np2(nys:nye,nzs:nze,1:nsp) = n0*(nxe-nxs)
@@ -119,10 +129,10 @@ contains
     call init__loading
 
     if(nrank == nroot) &
-         call fio__param(nxgs,nxge,nygs,nyge,nzgs,nzge,nys,nye,nzs,nze,    &
-                         np,nsp,np2,n0,                                    &
-                         c,q,r,0.5*r(1)*vti**2,rtemp,fpe,q(1)*b0/(r(2)*c), &
-                         c/fpe,delt,delx,dir,file9)
+         call fio__param(nxgs,nxge,nygs,nyge,nzgs,nzge,nys,nye,nzs,nze, &
+                         np,nsp,np2,n0,                                 &
+                         c,q,r,0.5*r(1)*vti**2,rtemp,fpe,fge,           &
+                         ldb,delt,delx,dir,file9)
 
   end subroutine init__set_param
 
@@ -132,10 +142,10 @@ contains
     integer :: i, j, k, ii, isp
     real(8) :: sd, aa, bb, cc, gamp
     real(8) :: vfunc, x0, eps=1d-40
-    
-!INITIAL VELOCITY PROFILE
-    vfunc(x0) = 0.5*v0*(1.d0+tanh( (x0-ldmp)/(0.1*ldmp) ))
 
+!INITIAL VELOCITY PROFILE
+    vfunc(x0) = 0.5*v0*(1.d0+tanh( (x0-ldmp)/(delx+eps) ))
+    
 !!--- SETTING OF FIELDS ---!
 !$OMP PARALLEL DO PRIVATE(i,j,k)
     do k=nzs-2,nze+2
