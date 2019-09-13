@@ -1,6 +1,6 @@
 EXEDIR = ./
 FC = mpif90
-FFLAGS = -O3  -fopenmp
+FFLAGS = -O3 -fopenmp
 OBJS = fio.o particle.o field.o boundary.o mpi_set.o const.o init.o main.o sort.o mom_calc.o
 
 .PHONY : all 
@@ -28,7 +28,7 @@ test: $(OBJS)
 # Dependencies
 field.o : boundary.o
 main.o : init.o const.o mpi_set.o boundary.o fio.o particle.o field.o sort.o mom_calc.o
-init.o : const.o mpi_set.o boundary.o fio.o sort.o
+init.o : const.o mpi_set.o fio.o sort.o
 
 clean :
 	rm -f $(OBJS) $(TARGET) *.mod *.out

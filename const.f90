@@ -3,35 +3,35 @@ module const
   implicit none
 
 !!************************ NUMERICAL CONSTANTS ************************!!
-  integer, parameter :: nx      = 20001      ! NUMBER OF GRID POINTS IN X
-  integer, parameter :: ny      = 1024      ! NUMBER OF GRID POINTS IN Y
-  integer, parameter :: nz      = 1024       ! NUMBER OF GRID POINTS IN Y
+  integer, parameter :: nx      = 201      ! NUMBER OF GRID POINTS IN X
+  integer, parameter :: ny      = 16      ! NUMBER OF GRID POINTS IN Y
+  integer, parameter :: nz      = 16       ! NUMBER OF GRID POINTS IN Y
   integer, parameter :: nxgs    = 2         ! START POINT IN X
   integer, parameter :: nxge    = nxgs+nx-1 ! END POINT
   integer, parameter :: nygs    = 2         ! START POINT IN Y
   integer, parameter :: nyge    = nygs+ny-1 ! END POINT
   integer, parameter :: nzgs    = 2         ! START POINT IN Z
   integer, parameter :: nzge    = nzgs+nz-1 ! END POINT
-  integer, parameter :: np      = 30*nx    ! MAX. NUMBER OF PARTICLES IN COLUMN AT (Y,Z)
+  integer, parameter :: np      = 50*nx    ! MAX. NUMBER OF PARTICLES IN COLUMN AT (Y,Z)
   integer, parameter :: nsp     = 2         ! NUMBER OF PARTICLE SPECIES
-  integer, parameter :: nproc   = 16384      ! NUMBER OF PROCESSES
+  integer, parameter :: nproc   = 8      ! NUMBER OF PROCESSES
   integer, parameter :: nproc_i = 1         ! NUMBER OF PROCESSES IN X
-  integer, parameter :: nproc_j = 128        ! NUMBER OF PROCESSES IN Y
+  integer, parameter :: nproc_j = 4        ! NUMBER OF PROCESSES IN Y
   integer, parameter :: nproc_k = nproc/(nproc_i*nproc_j) ! NUMBER OF PROCESSES IN Z
   integer, parameter :: nroot   = 0         ! ROOT PROC. NUMBER
 
 !! SETUP FOR MOVING INJECTOR; INITIAL DOMAIN SIZE IN X
   integer            :: nxs     = nxgs        ! START POINT IN X
-  integer            :: nxe     = nxgs+2500 ! INITIAL SIZE
+  integer            :: nxe     = nxge  ! INITIAL SIZE
 
 !! SETUP FOR MAIN PROGRAM & SUBROUTINES
-  integer, parameter :: itmax   = 20000    !NUMBER OF ITERATION
-  integer            :: it0     = 9999999	!0:INITIAL, NONZERO/9999999: RESTART DATA
+  integer, parameter :: itmax   = 100    !NUMBER OF ITERATION
+  integer            :: it0     = 0	!0:INITIAL, NONZERO/9999999: RESTART DATA
   integer, parameter :: intvl1  = 4000    !INTERVAL FOR PARTICLES & FIELDS STORAGE          
   integer, parameter :: intvl2  = 1         !INTERVAL FOR INJECTING PARTICLES
-  integer, parameter :: intvl3  = 1         !INTERVAL FOR EXPANDING PHYSICAL REGION IN X
-  integer, parameter :: intvl4  = 1000      !INTERVAL FOR RECORDING MOMENT DATA
-  character(len=128) :: dir     = './'      !DIRECTORY FOR OUTPUT
+  integer, parameter :: intvl3  = 1000         !INTERVAL FOR EXPANDING PHYSICAL REGION IN X
+  integer, parameter :: intvl4  = 10      !INTERVAL FOR RECORDING MOMENT DATA
+  character(len=128) :: dir     = './dat/'      !DIRECTORY FOR OUTPUT
   character(len=128) :: file9   = 'init_param.dat' !FILENAME OF INIT CONDITIONS
   real(8), parameter :: etlim   = 23.5*60.*60. !MAX. ELAPSE TIME IN SEC.
 
@@ -53,7 +53,7 @@ module const
 !!     phi : INCLINATION ANGLE FROM X-Y PLANE FOR BY & BZ
 !!    ldmp : FOR INITIAL VELOCITY PROFILE POSITION NEAR X=0 IN UNIT OF C/WPI
   integer, parameter :: n0     = 10
-  real(8), parameter :: mr     = 100.0D0
+  real(8), parameter :: mr     = 25.0D0
   real(8), parameter :: gam0   = 40.0D0
   real(8), parameter :: sig0   = 5.D-2
   real(8), parameter :: rtemp  = 1.0D0
@@ -61,7 +61,7 @@ module const
   real(8), parameter :: vti    = sqrt(1.0D0/(rtemp*mr))*vte
   real(8), parameter :: theta  = 90.0D0
   real(8), parameter :: phi    = 90.0D0
-  real(8)            :: ldmp   = 10.0
+  real(8)            :: ldmp   = 0.0
 !!TRACKING PARTICLES INITIALLY XRS <= X <= XRE ONLY WHEN NDIM=6
   real(8), parameter :: xrs   = 530.0D0
   real(8), parameter :: xre   = 540.0D0
