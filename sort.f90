@@ -19,7 +19,7 @@ contains
     real(8), intent(in)  :: up(6,np,nys:nye,nzs:nze,nsp)
     real(8), intent(out) :: gp(6,np,nys:nye,nzs:nze,nsp)
     integer              :: i, j, k, ii, isp
-    integer              :: cnt(nxs:nxe-1), sum_cnt(nxs:nxe-1) 
+    integer              :: cnt(nxs:nxe-1), sum_cnt(nxs:nxe) 
     real(8)              :: d_delx
     
     d_delx = 1.D0/delx

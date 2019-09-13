@@ -198,8 +198,8 @@ contains
                          ncomw,nstat,nerr)
        ssize = 6*sum(bff_cnt_j(1:nze-nzs+3))
        rsize = 6*sum(cnt_tmp_j(nzs-1:nze+1))
-       allocate(ptcl_snd(ssize))
-       allocate(ptcl_rcv(rsize))
+       allocate(ptcl_snd(max(ssize,1)))
+       allocate(ptcl_rcv(max(rsize,1)))
 
        j=nys-1
 !$OMP PARALLEL DO PRIVATE(iii,ii,k)
@@ -252,8 +252,8 @@ contains
                          ncomw,nstat,nerr)
        ssize = 6*sum(bff_cnt_j(1:nze-nzs+3))
        rsize = 6*sum(cnt_tmp_j(nzs-1:nze+1))
-       allocate(ptcl_snd(ssize))
-       allocate(ptcl_rcv(rsize))
+       allocate(ptcl_snd(max(ssize,1)))
+       allocate(ptcl_rcv(max(rsize,1)))
 
        j=nye+1
 !$OMP PARALLEL DO PRIVATE(iii,ii,k)
@@ -305,8 +305,8 @@ contains
                          ncomw,nstat,nerr)
        ssize = 6*sum(cnt(nys:nye,nzs-1))
        rsize = 6*sum(cnt_tmp_k(nys:nye))
-       allocate(ptcl_snd(ssize))
-       allocate(ptcl_rcv(rsize))
+       allocate(ptcl_snd(max(ssize,1)))
+       allocate(ptcl_rcv(max(rsize,1)))
 
        k=nzs-1
 !$OMP PARALLEL DO PRIVATE(iii,ii,j)
@@ -359,8 +359,8 @@ contains
 
        ssize = 6*sum(cnt(nys:nye,nze+1))
        rsize = 6*sum(cnt_tmp_k(nys:nye))
-       allocate(ptcl_snd(ssize))
-       allocate(ptcl_rcv(rsize))
+       allocate(ptcl_snd(max(ssize,1)))
+       allocate(ptcl_rcv(max(rsize,1)))
 
        k=nze+1
 !$OMP PARALLEL DO PRIVATE(iii,ii,j)
