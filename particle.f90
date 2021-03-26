@@ -22,19 +22,36 @@ contains
     real(8), intent(in)  :: uf(6,nxgs-2:nxge+2,nys-2:nye+2,nzs-2:nze+2)
     real(8), intent(out) :: gp(6,np,nys:nye,nzs:nze,nsp)
 
-    integer            :: i,j, k, ii, isp, i0, j0, k0
-    real(8)            :: tmpf(6,-1:2,-1:2,-1:2)
+    integer            :: i, j, k, ii, isp
+    real(8)            :: tmpf(6,nxs-1:nxe+1,nys-1:nye+1,nzs-1:nze+1)
     real(8)            :: idelx, dh, fac1, fac1r, fac2, fac2r, gam, igam, txxx
     real(8)            :: bpx, bpy, bpz, epx, epy, epz
     real(8)            :: uvm1, uvm2, uvm3, uvm4, uvm5, uvm6
-    real(8)            :: s0xm, s0x, s0xp, s0ym, s0y, s0yp, s0zm, s0z, s0zp
     real(8)            :: shxm, shx, shxp, shym, shy, shyp, shzm, shz, shzp
 
     idelx = 1./delx
 
-!$OMP PARALLEL DO PRIVATE(ii,i,j,k,isp,i0,j0,k0,                       &
-!$OMP                     dh,gam,igam,fac1,fac2,txxx,fac1r,fac2r,tmpf, &
-!$OMP                     s0xm,s0x,s0xp,s0ym,s0y,s0yp,s0zm,s0z,s0zp,   &
+    !fields at (i+1/2, j+1/2, k+1/2)
+!$OMP PARALLEL DO PRIVATE(i,j,k)
+    do k=nzs-1,nze+1
+      do j=nys-1,nye+1
+        do i=nxs-1,nxe+1
+           tmpf(1,i,j,k) = 0.25*(+uf(1,i,j,k  )+uf(1,i,j+1,k  ) &
+                                 +uf(1,i,j,k+1)+uf(1,i,j+1,k+1))
+           tmpf(2,i,j,k) = 0.25*(+uf(2,i,j,k  )+uf(2,i+1,j,k  ) &
+                                 +uf(2,i,j,k+1)+uf(2,i+1,j,k+1))
+           tmpf(3,i,j,k) = 0.25*(+uf(3,i,j  ,k)+uf(3,i+1,j  ,k) &
+                                 +uf(3,i,j+1,k)+uf(3,i+1,j+1,k))
+           tmpf(4,i,j,k) = 0.5*(+uf(4,i,j,k)+uf(4,i+1,j  ,k  ))
+           tmpf(5,i,j,k) = 0.5*(+uf(5,i,j,k)+uf(5,i  ,j+1,k  ))
+           tmpf(6,i,j,k) = 0.5*(+uf(6,i,j,k)+uf(6,i  ,j  ,k+1))
+        enddo
+      enddo
+    enddo
+!OMP END PARALLEL DO
+
+!$OMP PARALLEL DO PRIVATE(ii,i,j,k,isp,                                &
+!$OMP                     dh,gam,igam,fac1,fac2,txxx,fac1r,fac2r,      &
 !$OMP                     shxm,shx,shxp,shym,shy,shyp,shzm,shz,shzp,   &
 !$OMP                     bpx,bpy,bpz,epx,epy,epz,                     &
 !$OMP                     uvm1,uvm2,uvm3,uvm4,uvm5,uvm6)
@@ -48,29 +65,9 @@ contains
        txxx = fac1*fac1
        fac2 = q(isp)*delt/r(isp)
 
-       tmpf(1:6,-1:2,-1:2,-1:2) = uf(1:6,i-1:i+2,j-1:j+2,k-1:k+2)
-
        do ii=cumcnt(i,j,k,isp)+1,cumcnt(i+1,j,k,isp)
 
           !second order shape function
-          i0 = int(up(1,ii,j,k,isp)*idelx+0.5)
-          dh = up(1,ii,j,k,isp)*idelx-i0
-          s0xm = 0.5*(0.5-dh)*(0.5-dh)
-          s0x  = 0.75-dh*dh
-          s0xp = 0.5*(0.5+dh)*(0.5+dh)
-
-          j0 = int(up(2,ii,j,k,isp)*idelx+0.5)
-          dh = up(2,ii,j,k,isp)*idelx-j0
-          s0ym = 0.5*(0.5-dh)*(0.5-dh)
-          s0y  = 0.75-dh*dh
-          s0yp = 0.5*(0.5+dh)*(0.5+dh)
-
-          k0 = int(up(3,ii,j,k,isp)*idelx+0.5)
-          dh = up(3,ii,j,k,isp)*idelx-k0
-          s0zm = 0.5*(0.5-dh)*(0.5-dh)
-          s0z  = 0.75-dh*dh
-          s0zp = 0.5*(0.5+dh)*(0.5+dh)
-
           dh = up(1,ii,j,k,isp)*idelx-0.5-i
           shxm = 0.5*(0.5-dh)*(0.5-dh)
           shx  = 0.75-dh*dh
@@ -86,65 +83,65 @@ contains
           shz  = 0.75-dh*dh
           shzp = 0.5*(0.5+dh)*(0.5+dh)
 
-          bpx = (+(+tmpf(1,-1,j0-j-1,k0-k-1)*shxm+tmpf(1,0,j0-j-1,k0-k-1)*shx+tmpf(1,+1,j0-j-1,k0-k-1)*shxp)*s0ym       &
-                 +(+tmpf(1,-1,j0-j  ,k0-k-1)*shxm+tmpf(1,0,j0-j  ,k0-k-1)*shx+tmpf(1,+1,j0-j  ,k0-k-1)*shxp)*s0y        &
-                 +(+tmpf(1,-1,j0-j+1,k0-k-1)*shxm+tmpf(1,0,j0-j+1,k0-k-1)*shx+tmpf(1,+1,j0-j+1,k0-k-1)*shxp)*s0yp)*s0zm &
-               +(+(+tmpf(1,-1,j0-j-1,k0-k  )*shxm+tmpf(1,0,j0-j-1,k0-k  )*shx+tmpf(1,+1,j0-j-1,k0-k  )*shxp)*s0ym       &
-                 +(+tmpf(1,-1,j0-j  ,k0-k  )*shxm+tmpf(1,0,j0-j  ,k0-k  )*shx+tmpf(1,+1,j0-j  ,k0-k  )*shxp)*s0y        &
-                 +(+tmpf(1,-1,j0-j+1,k0-k  )*shxm+tmpf(1,0,j0-j+1,k0-k  )*shx+tmpf(1,+1,j0-j+1,k0-k  )*shxp)*s0yp)*s0z  &
-               +(+(+tmpf(1,-1,j0-j-1,k0-k+1)*shxm+tmpf(1,0,j0-j-1,k0-k+1)*shx+tmpf(1,+1,j0-j-1,k0-k+1)*shxp)*s0ym       &
-                 +(+tmpf(1,-1,j0-j  ,k0-k+1)*shxm+tmpf(1,0,j0-j  ,k0-k+1)*shx+tmpf(1,+1,j0-j  ,k0-k+1)*shxp)*s0y        &
-                 +(+tmpf(1,-1,j0-j+1,k0-k+1)*shxm+tmpf(1,0,j0-j+1,k0-k+1)*shx+tmpf(1,+1,j0-j+1,k0-k+1)*shxp)*s0yp)*s0zp
+          bpx = (+(+tmpf(1,i-1,j-1,k-1)*shxm+tmpf(1,i,j-1,k-1)*shx+tmpf(1,i+1,j-1,k-1)*shxp)*shym       &
+                 +(+tmpf(1,i-1,j  ,k-1)*shxm+tmpf(1,i,j  ,k-1)*shx+tmpf(1,i+1,j  ,k-1)*shxp)*shy        &
+                 +(+tmpf(1,i-1,j+1,k-1)*shxm+tmpf(1,i,j+1,k-1)*shx+tmpf(1,i+1,j+1,k-1)*shxp)*shyp)*shzm &
+               +(+(+tmpf(1,i-1,j-1,k  )*shxm+tmpf(1,i,j-1,k  )*shx+tmpf(1,i+1,j-1,k  )*shxp)*shym       &
+                 +(+tmpf(1,i-1,j  ,k  )*shxm+tmpf(1,i,j  ,k  )*shx+tmpf(1,i+1,j  ,k  )*shxp)*shy        &
+                 +(+tmpf(1,i-1,j+1,k  )*shxm+tmpf(1,i,j+1,k  )*shx+tmpf(1,i+1,j+1,k  )*shxp)*shyp)*shz  &
+               +(+(+tmpf(1,i-1,j-1,k+1)*shxm+tmpf(1,i,j-1,k+1)*shx+tmpf(1,i+1,j-1,k+1)*shxp)*shym       &
+                 +(+tmpf(1,i-1,j  ,k+1)*shxm+tmpf(1,i,j  ,k+1)*shx+tmpf(1,i+1,j  ,k+1)*shxp)*shy        &
+                 +(+tmpf(1,i-1,j+1,k+1)*shxm+tmpf(1,i,j+1,k+1)*shx+tmpf(1,i+1,j+1,k+1)*shxp)*shyp)*shzp
 
-          bpy = (+(+tmpf(2,i0-i-1,-1,k0-k-1)*s0xm+tmpf(2,i0-i,-1,k0-k-1)*s0x+tmpf(2,i0-i+1,-1,k0-k-1)*s0xp)*shym       &
-                 +(+tmpf(2,i0-i-1, 0,k0-k-1)*s0xm+tmpf(2,i0-i, 0,k0-k-1)*s0x+tmpf(2,i0-i+1, 0,k0-k-1)*s0xp)*shy        &
-                 +(+tmpf(2,i0-i-1,+1,k0-k-1)*s0xm+tmpf(2,i0-i,+1,k0-k-1)*s0x+tmpf(2,i0-i+1,+1,k0-k-1)*s0xp)*shyp)*s0zm &
-               +(+(+tmpf(2,i0-i-1,-1,k0-k  )*s0xm+tmpf(2,i0-i,-1,k0-k  )*s0x+tmpf(2,i0-i+1,-1,k0-k  )*s0xp)*shym       &
-                 +(+tmpf(2,i0-i-1, 0,k0-k  )*s0xm+tmpf(2,i0-i, 0,k0-k  )*s0x+tmpf(2,i0-i+1, 0,k0-k  )*s0xp)*shy        &
-                 +(+tmpf(2,i0-i-1,+1,k0-k  )*s0xm+tmpf(2,i0-i,+1,k0-k  )*s0x+tmpf(2,i0-i+1,+1,k0-k  )*s0xp)*shyp)*s0z  &
-               +(+(+tmpf(2,i0-i-1,-1,k0-k+1)*s0xm+tmpf(2,i0-i,-1,k0-k+1)*s0x+tmpf(2,i0-i+1,-1,k0-k+1)*s0xp)*shym       &
-                 +(+tmpf(2,i0-i-1, 0,k0-k+1)*s0xm+tmpf(2,i0-i, 0,k0-k+1)*s0x+tmpf(2,i0-i+1, 0,k0-k+1)*s0xp)*shy        &
-                 +(+tmpf(2,i0-i-1,+1,k0-k+1)*s0xm+tmpf(2,i0-i,+1,k0-k+1)*s0x+tmpf(2,i0-i+1,+1,k0-k+1)*s0xp)*shyp)*s0zp
+          bpy = (+(+tmpf(2,i-1,j-1,k-1)*shxm+tmpf(2,i,j-1,k-1)*shx+tmpf(2,i+1,j-1,k-1)*shxp)*shym       &
+                 +(+tmpf(2,i-1,j  ,k-1)*shxm+tmpf(2,i,j  ,k-1)*shx+tmpf(2,i+1,j  ,k-1)*shxp)*shy        &
+                 +(+tmpf(2,i-1,j+1,k-1)*shxm+tmpf(2,i,j+1,k-1)*shx+tmpf(2,i+1,j+1,k-1)*shxp)*shyp)*shzm &
+               +(+(+tmpf(2,i-1,j-1,k  )*shxm+tmpf(2,i,j-1,k  )*shx+tmpf(2,i+1,j-1,k  )*shxp)*shym       &
+                 +(+tmpf(2,i-1,j  ,k  )*shxm+tmpf(2,i,j  ,k  )*shx+tmpf(2,i+1,j  ,k  )*shxp)*shy        &
+                 +(+tmpf(2,i-1,j+1,k  )*shxm+tmpf(2,i,j+1,k  )*shx+tmpf(2,i+1,j+1,k  )*shxp)*shyp)*shz  &
+               +(+(+tmpf(2,i-1,j-1,k+1)*shxm+tmpf(2,i,j-1,k+1)*shx+tmpf(2,i+1,j-1,k+1)*shxp)*shym       &
+                 +(+tmpf(2,i-1,j  ,k+1)*shxm+tmpf(2,i,j  ,k+1)*shx+tmpf(2,i+1,j  ,k+1)*shxp)*shy        &
+                 +(+tmpf(2,i-1,j+1,k+1)*shxm+tmpf(2,i,j+1,k+1)*shx+tmpf(2,i+1,j+1,k+1)*shxp)*shyp)*shzp
 
-          bpz = (+(+tmpf(3,i0-i-1,j0-j-1,-1)*s0xm+tmpf(3,i0-i,j0-j-1,-1)*s0x+tmpf(3,i0-i+1,j0-j-1,-1)*s0xp)*s0ym       &
-                 +(+tmpf(3,i0-i-1,j0-j  ,-1)*s0xm+tmpf(3,i0-i,j0-j  ,-1)*s0x+tmpf(3,i0-i+1,j0-j  ,-1)*s0xp)*s0y        &
-                 +(+tmpf(3,i0-i-1,j0-j+1,-1)*s0xm+tmpf(3,i0-i,j0-j+1,-1)*s0x+tmpf(3,i0-i+1,j0-j+1,-1)*s0xp)*s0yp)*shzm &
-               +(+(+tmpf(3,i0-i-1,j0-j-1, 0)*s0xm+tmpf(3,i0-i,j0-j-1, 0)*s0x+tmpf(3,i0-i+1,j0-j-1, 0)*s0xp)*s0ym       &
-                 +(+tmpf(3,i0-i-1,j0-j  , 0)*s0xm+tmpf(3,i0-i,j0-j  , 0)*s0x+tmpf(3,i0-i+1,j0-j  , 0)*s0xp)*s0y        &
-                 +(+tmpf(3,i0-i-1,j0-j+1, 0)*s0xm+tmpf(3,i0-i,j0-j+1, 0)*s0x+tmpf(3,i0-i+1,j0-j+1, 0)*s0xp)*s0yp)*shz  &
-               +(+(+tmpf(3,i0-i-1,j0-j-1,+1)*s0xm+tmpf(3,i0-i,j0-j-1,+1)*s0x+tmpf(3,i0-i+1,j0-j-1,+1)*s0xp)*s0ym       &
-                 +(+tmpf(3,i0-i-1,j0-j  ,+1)*s0xm+tmpf(3,i0-i,j0-j  ,+1)*s0x+tmpf(3,i0-i+1,j0-j  ,+1)*s0xp)*s0y        &
-                 +(+tmpf(3,i0-i-1,j0-j+1,+1)*s0xm+tmpf(3,i0-i,j0-j+1,+1)*s0x+tmpf(3,i0-i+1,j0-j+1,+1)*s0xp)*s0yp)*shzp
+          bpz = (+(+tmpf(3,i-1,j-1,k-1)*shxm+tmpf(3,i,j-1,k-1)*shx+tmpf(3,i+1,j-1,k-1)*shxp)*shym       &
+                 +(+tmpf(3,i-1,j  ,k-1)*shxm+tmpf(3,i,j  ,k-1)*shx+tmpf(3,i+1,j  ,k-1)*shxp)*shy        &
+                 +(+tmpf(3,i-1,j+1,k-1)*shxm+tmpf(3,i,j+1,k-1)*shx+tmpf(3,i+1,j+1,k-1)*shxp)*shyp)*shzm &
+               +(+(+tmpf(3,i-1,j-1,k  )*shxm+tmpf(3,i,j-1,k  )*shx+tmpf(3,i+1,j-1,k  )*shxp)*shym       &
+                 +(+tmpf(3,i-1,j  ,k  )*shxm+tmpf(3,i,j  ,k  )*shx+tmpf(3,i+1,j  ,k  )*shxp)*shy        &
+                 +(+tmpf(3,i-1,j+1,k  )*shxm+tmpf(3,i,j+1,k  )*shx+tmpf(3,i+1,j+1,k  )*shxp)*shyp)*shz  &
+               +(+(+tmpf(3,i-1,j-1,k+1)*shxm+tmpf(3,i,j-1,k+1)*shx+tmpf(3,i+1,j-1,k+1)*shxp)*shym       &
+                 +(+tmpf(3,i-1,j  ,k+1)*shxm+tmpf(3,i,j  ,k+1)*shx+tmpf(3,i+1,j  ,k+1)*shxp)*shy        &
+                 +(+tmpf(3,i-1,j+1,k+1)*shxm+tmpf(3,i,j+1,k+1)*shx+tmpf(3,i+1,j+1,k+1)*shxp)*shyp)*shzp
 
-          epx = (+(+tmpf(4,i0-i-1,-1,-1)*s0xm+tmpf(4,i0-i,-1,-1)*s0x+tmpf(4,i0-i+1,-1,-1)*s0xp)*shym       &
-                 +(+tmpf(4,i0-i-1, 0,-1)*s0xm+tmpf(4,i0-i, 0,-1)*s0x+tmpf(4,i0-i+1, 0,-1)*s0xp)*shy        &
-                 +(+tmpf(4,i0-i-1,+1,-1)*s0xm+tmpf(4,i0-i,+1,-1)*s0x+tmpf(4,i0-i+1,+1,-1)*s0xp)*shyp)*shzm &
-               +(+(+tmpf(4,i0-i-1,-1, 0)*s0xm+tmpf(4,i0-i,-1, 0)*s0x+tmpf(4,i0-i+1,-1, 0)*s0xp)*shym       &
-                 +(+tmpf(4,i0-i-1, 0, 0)*s0xm+tmpf(4,i0-i, 0, 0)*s0x+tmpf(4,i0-i+1, 0, 0)*s0xp)*shy        &
-                 +(+tmpf(4,i0-i-1,+1, 0)*s0xm+tmpf(4,i0-i,+1, 0)*s0x+tmpf(4,i0-i+1,+1, 0)*s0xp)*shyp)*shz  &
-               +(+(+tmpf(4,i0-i-1,-1,+1)*s0xm+tmpf(4,i0-i,-1,+1)*s0x+tmpf(4,i0-i+1,-1,+1)*s0xp)*shym       &
-                 +(+tmpf(4,i0-i-1, 0,+1)*s0xm+tmpf(4,i0-i, 0,+1)*s0x+tmpf(4,i0-i+1, 0,+1)*s0xp)*shy        &
-                 +(+tmpf(4,i0-i-1,+1,+1)*s0xm+tmpf(4,i0-i,+1,+1)*s0x+tmpf(4,i0-i+1,+1,+1)*s0xp)*shyp)*shzp
+          epx = (+(+tmpf(4,i-1,j-1,k-1)*shxm+tmpf(4,i,j-1,k-1)*shx+tmpf(4,i+1,j-1,k-1)*shxp)*shym       &
+                 +(+tmpf(4,i-1,j  ,k-1)*shxm+tmpf(4,i,j  ,k-1)*shx+tmpf(4,i+1,j  ,k-1)*shxp)*shy        &
+                 +(+tmpf(4,i-1,j+1,k-1)*shxm+tmpf(4,i,j+1,k-1)*shx+tmpf(4,i+1,j+1,k-1)*shxp)*shyp)*shzm &
+               +(+(+tmpf(4,i-1,j-1,k  )*shxm+tmpf(4,i,j-1,k  )*shx+tmpf(4,i+1,j-1,k  )*shxp)*shym       &
+                 +(+tmpf(4,i-1,j  ,k  )*shxm+tmpf(4,i,j  ,k  )*shx+tmpf(4,i+1,j  ,k  )*shxp)*shy        &
+                 +(+tmpf(4,i-1,j+1,k  )*shxm+tmpf(4,i,j+1,k  )*shx+tmpf(4,i+1,j+1,k  )*shxp)*shyp)*shz  &
+               +(+(+tmpf(4,i-1,j-1,k+1)*shxm+tmpf(4,i,j-1,k+1)*shx+tmpf(4,i+1,j-1,k+1)*shxp)*shym       &
+                 +(+tmpf(4,i-1,j  ,k+1)*shxm+tmpf(4,i,j  ,k+1)*shx+tmpf(4,i+1,j  ,k+1)*shxp)*shy        &
+                 +(+tmpf(4,i-1,j+1,k+1)*shxm+tmpf(4,i,j+1,k+1)*shx+tmpf(4,i+1,j+1,k+1)*shxp)*shyp)*shzp
 
-          epy = (+(+tmpf(5,-1,j0-j-1,-1)*shxm+tmpf(5,0,j0-j-1,-1)*shx+tmpf(5,+1,j0-j-1,-1)*shxp)*s0ym       &
-                 +(+tmpf(5,-1,j0-j  ,-1)*shxm+tmpf(5,0,j0-j  ,-1)*shx+tmpf(5,+1,j0-j  ,-1)*shxp)*s0y        &
-                 +(+tmpf(5,-1,j0-j+1,-1)*shxm+tmpf(5,0,j0-j+1,-1)*shx+tmpf(5,+1,j0-j+1,-1)*shxp)*s0yp)*shzm &
-               +(+(+tmpf(5,-1,j0-j-1, 0)*shxm+tmpf(5,0,j0-j-1, 0)*shx+tmpf(5,+1,j0-j-1, 0)*shxp)*s0ym       &
-                 +(+tmpf(5,-1,j0-j  , 0)*shxm+tmpf(5,0,j0-j  , 0)*shx+tmpf(5,+1,j0-j  , 0)*shxp)*s0y        &
-                 +(+tmpf(5,-1,j0-j+1, 0)*shxm+tmpf(5,0,j0-j+1, 0)*shx+tmpf(5,+1,j0-j+1, 0)*shxp)*s0yp)*shz  &
-               +(+(+tmpf(5,-1,j0-j-1,+1)*shxm+tmpf(5,0,j0-j-1,+1)*shx+tmpf(5,+1,j0-j-1,+1)*shxp)*s0ym       &
-                 +(+tmpf(5,-1,j0-j  ,+1)*shxm+tmpf(5,0,j0-j  ,+1)*shx+tmpf(5,+1,j0-j  ,+1)*shxp)*s0y        &
-                 +(+tmpf(5,-1,j0-j+1,+1)*shxm+tmpf(5,0,j0-j+1,+1)*shx+tmpf(5,+1,j0-j+1,+1)*shxp)*s0yp)*shzp
+          epy = (+(+tmpf(5,i-1,j-1,k-1)*shxm+tmpf(5,i,j-1,k-1)*shx+tmpf(5,i+1,j-1,k-1)*shxp)*shym       &
+                 +(+tmpf(5,i-1,j  ,k-1)*shxm+tmpf(5,i,j  ,k-1)*shx+tmpf(5,i+1,j  ,k-1)*shxp)*shy        &
+                 +(+tmpf(5,i-1,j+1,k-1)*shxm+tmpf(5,i,j+1,k-1)*shx+tmpf(5,i+1,j+1,k-1)*shxp)*shyp)*shzm &
+               +(+(+tmpf(5,i-1,j-1,k  )*shxm+tmpf(5,i,j-1,k  )*shx+tmpf(5,i+1,j-1,k  )*shxp)*shym       &
+                 +(+tmpf(5,i-1,j  ,k  )*shxm+tmpf(5,i,j  ,k  )*shx+tmpf(5,i+1,j  ,k  )*shxp)*shy        &
+                 +(+tmpf(5,i-1,j+1,k  )*shxm+tmpf(5,i,j+1,k  )*shx+tmpf(5,i+1,j+1,k  )*shxp)*shyp)*shz  &
+               +(+(+tmpf(5,i-1,j-1,k+1)*shxm+tmpf(5,i,j-1,k+1)*shx+tmpf(5,i+1,j-1,k+1)*shxp)*shym       &
+                 +(+tmpf(5,i-1,j  ,k+1)*shxm+tmpf(5,i,j  ,k+1)*shx+tmpf(5,i+1,j  ,k+1)*shxp)*shy        &
+                 +(+tmpf(5,i-1,j+1,k+1)*shxm+tmpf(5,i,j+1,k+1)*shx+tmpf(5,i+1,j+1,k+1)*shxp)*shyp)*shzp
 
-          epz = (+(+tmpf(6,-1,-1,k0-k-1)*shxm+tmpf(6,0,-1,k0-k-1)*shx+tmpf(6,+1,-1,k0-k-1)*shxp)*shym       &
-                 +(+tmpf(6,-1, 0,k0-k-1)*shxm+tmpf(6,0, 0,k0-k-1)*shx+tmpf(6,+1, 0,k0-k-1)*shxp)*shy        &
-                 +(+tmpf(6,-1,+1,k0-k-1)*shxm+tmpf(6,0,+1,k0-k-1)*shx+tmpf(6,+1,+1,k0-k-1)*shxp)*shyp)*s0zm &
-               +(+(+tmpf(6,-1,-1,k0-k  )*shxm+tmpf(6,0,-1,k0-k  )*shx+tmpf(6,+1,-1,k0-k  )*shxp)*shym       &
-                 +(+tmpf(6,-1, 0,k0-k  )*shxm+tmpf(6,0, 0,k0-k  )*shx+tmpf(6,+1, 0,k0-k  )*shxp)*shy        &
-                 +(+tmpf(6,-1,+1,k0-k  )*shxm+tmpf(6,0,+1,k0-k  )*shx+tmpf(6,+1,+1,k0-k  )*shxp)*shyp)*s0z  &
-               +(+(+tmpf(6,-1,-1,k0-k+1)*shxm+tmpf(6,0,-1,k0-k+1)*shx+tmpf(6,+1,-1,k0-k+1)*shxp)*shym       &
-                 +(+tmpf(6,-1, 0,k0-k+1)*shxm+tmpf(6,0, 0,k0-k+1)*shx+tmpf(6,+1, 0,k0-k+1)*shxp)*shy        &
-                 +(+tmpf(6,-1,+1,k0-k+1)*shxm+tmpf(6,0,+1,k0-k+1)*shx+tmpf(6,+1,+1,k0-k+1)*shxp)*shyp)*s0zp
+          epz = (+(+tmpf(6,i-1,j-1,k-1)*shxm+tmpf(6,i,j-1,k-1)*shx+tmpf(6,i+1,j-1,k-1)*shxp)*shym       &
+                 +(+tmpf(6,i-1,j  ,k-1)*shxm+tmpf(6,i,j  ,k-1)*shx+tmpf(6,i+1,j  ,k-1)*shxp)*shy        &
+                 +(+tmpf(6,i-1,j+1,k-1)*shxm+tmpf(6,i,j+1,k-1)*shx+tmpf(6,i+1,j+1,k-1)*shxp)*shyp)*shzm &
+               +(+(+tmpf(6,i-1,j-1,k  )*shxm+tmpf(6,i,j-1,k  )*shx+tmpf(6,i+1,j-1,k  )*shxp)*shym       &
+                 +(+tmpf(6,i-1,j  ,k  )*shxm+tmpf(6,i,j  ,k  )*shx+tmpf(6,i+1,j  ,k  )*shxp)*shy        &
+                 +(+tmpf(6,i-1,j+1,k  )*shxm+tmpf(6,i,j+1,k  )*shx+tmpf(6,i+1,j+1,k  )*shxp)*shyp)*shz  &
+               +(+(+tmpf(6,i-1,j-1,k+1)*shxm+tmpf(6,i,j-1,k+1)*shx+tmpf(6,i+1,j-1,k+1)*shxp)*shym       &
+                 +(+tmpf(6,i-1,j  ,k+1)*shxm+tmpf(6,i,j  ,k+1)*shx+tmpf(6,i+1,j  ,k+1)*shxp)*shy        &
+                 +(+tmpf(6,i-1,j+1,k+1)*shxm+tmpf(6,i,j+1,k+1)*shx+tmpf(6,i+1,j+1,k+1)*shxp)*shyp)*shzp
 
           !accel.
           uvm1 = up(4,ii,j,k,isp)+fac1*epx
@@ -178,7 +175,6 @@ contains
           gp(1,ii,j,k,isp) = up(1,ii,j,k,isp)+gp(4,ii,j,k,isp)*delt*gam
           gp(2,ii,j,k,isp) = up(2,ii,j,k,isp)+gp(5,ii,j,k,isp)*delt*gam
           gp(3,ii,j,k,isp) = up(3,ii,j,k,isp)+gp(6,ii,j,k,isp)*delt*gam
-
        enddo
 
        isp = 2
@@ -190,24 +186,6 @@ contains
        do ii=cumcnt(i,j,k,isp)+1,cumcnt(i+1,j,k,isp)
 
           !second order shape function
-          i0 = int(up(1,ii,j,k,isp)*idelx+0.5)
-          dh = up(1,ii,j,k,isp)*idelx-i0
-          s0xm = 0.5*(0.5-dh)*(0.5-dh)
-          s0x  = 0.75-dh*dh
-          s0xp = 0.5*(0.5+dh)*(0.5+dh)
-
-          j0 = int(up(2,ii,j,k,isp)*idelx+0.5)
-          dh = up(2,ii,j,k,isp)*idelx-j0
-          s0ym = 0.5*(0.5-dh)*(0.5-dh)
-          s0y  = 0.75-dh*dh
-          s0yp = 0.5*(0.5+dh)*(0.5+dh)
-
-          k0 = int(up(3,ii,j,k,isp)*idelx+0.5)
-          dh = up(3,ii,j,k,isp)*idelx-k0
-          s0zm = 0.5*(0.5-dh)*(0.5-dh)
-          s0z  = 0.75-dh*dh
-          s0zp = 0.5*(0.5+dh)*(0.5+dh)
-
           dh = up(1,ii,j,k,isp)*idelx-0.5-i
           shxm = 0.5*(0.5-dh)*(0.5-dh)
           shx  = 0.75-dh*dh
@@ -223,65 +201,65 @@ contains
           shz  = 0.75-dh*dh
           shzp = 0.5*(0.5+dh)*(0.5+dh)
 
-          bpx = (+(+tmpf(1,-1,j0-j-1,k0-k-1)*shxm+tmpf(1,0,j0-j-1,k0-k-1)*shx+tmpf(1,+1,j0-j-1,k0-k-1)*shxp)*s0ym       &
-                 +(+tmpf(1,-1,j0-j  ,k0-k-1)*shxm+tmpf(1,0,j0-j  ,k0-k-1)*shx+tmpf(1,+1,j0-j  ,k0-k-1)*shxp)*s0y        &
-                 +(+tmpf(1,-1,j0-j+1,k0-k-1)*shxm+tmpf(1,0,j0-j+1,k0-k-1)*shx+tmpf(1,+1,j0-j+1,k0-k-1)*shxp)*s0yp)*s0zm &
-               +(+(+tmpf(1,-1,j0-j-1,k0-k  )*shxm+tmpf(1,0,j0-j-1,k0-k  )*shx+tmpf(1,+1,j0-j-1,k0-k  )*shxp)*s0ym       &
-                 +(+tmpf(1,-1,j0-j  ,k0-k  )*shxm+tmpf(1,0,j0-j  ,k0-k  )*shx+tmpf(1,+1,j0-j  ,k0-k  )*shxp)*s0y        &
-                 +(+tmpf(1,-1,j0-j+1,k0-k  )*shxm+tmpf(1,0,j0-j+1,k0-k  )*shx+tmpf(1,+1,j0-j+1,k0-k  )*shxp)*s0yp)*s0z  &
-               +(+(+tmpf(1,-1,j0-j-1,k0-k+1)*shxm+tmpf(1,0,j0-j-1,k0-k+1)*shx+tmpf(1,+1,j0-j-1,k0-k+1)*shxp)*s0ym       &
-                 +(+tmpf(1,-1,j0-j  ,k0-k+1)*shxm+tmpf(1,0,j0-j  ,k0-k+1)*shx+tmpf(1,+1,j0-j  ,k0-k+1)*shxp)*s0y        &
-                 +(+tmpf(1,-1,j0-j+1,k0-k+1)*shxm+tmpf(1,0,j0-j+1,k0-k+1)*shx+tmpf(1,+1,j0-j+1,k0-k+1)*shxp)*s0yp)*s0zp
+          bpx = (+(+tmpf(1,i-1,j-1,k-1)*shxm+tmpf(1,i,j-1,k-1)*shx+tmpf(1,i+1,j-1,k-1)*shxp)*shym       &
+                 +(+tmpf(1,i-1,j  ,k-1)*shxm+tmpf(1,i,j  ,k-1)*shx+tmpf(1,i+1,j  ,k-1)*shxp)*shy        &
+                 +(+tmpf(1,i-1,j+1,k-1)*shxm+tmpf(1,i,j+1,k-1)*shx+tmpf(1,i+1,j+1,k-1)*shxp)*shyp)*shzm &
+               +(+(+tmpf(1,i-1,j-1,k  )*shxm+tmpf(1,i,j-1,k  )*shx+tmpf(1,i+1,j-1,k  )*shxp)*shym       &
+                 +(+tmpf(1,i-1,j  ,k  )*shxm+tmpf(1,i,j  ,k  )*shx+tmpf(1,i+1,j  ,k  )*shxp)*shy        &
+                 +(+tmpf(1,i-1,j+1,k  )*shxm+tmpf(1,i,j+1,k  )*shx+tmpf(1,i+1,j+1,k  )*shxp)*shyp)*shz  &
+               +(+(+tmpf(1,i-1,j-1,k+1)*shxm+tmpf(1,i,j-1,k+1)*shx+tmpf(1,i+1,j-1,k+1)*shxp)*shym       &
+                 +(+tmpf(1,i-1,j  ,k+1)*shxm+tmpf(1,i,j  ,k+1)*shx+tmpf(1,i+1,j  ,k+1)*shxp)*shy        &
+                 +(+tmpf(1,i-1,j+1,k+1)*shxm+tmpf(1,i,j+1,k+1)*shx+tmpf(1,i+1,j+1,k+1)*shxp)*shyp)*shzp
 
-          bpy = (+(+tmpf(2,i0-i-1,-1,k0-k-1)*s0xm+tmpf(2,i0-i,-1,k0-k-1)*s0x+tmpf(2,i0-i+1,-1,k0-k-1)*s0xp)*shym       &
-                 +(+tmpf(2,i0-i-1, 0,k0-k-1)*s0xm+tmpf(2,i0-i, 0,k0-k-1)*s0x+tmpf(2,i0-i+1, 0,k0-k-1)*s0xp)*shy        &
-                 +(+tmpf(2,i0-i-1,+1,k0-k-1)*s0xm+tmpf(2,i0-i,+1,k0-k-1)*s0x+tmpf(2,i0-i+1,+1,k0-k-1)*s0xp)*shyp)*s0zm &
-               +(+(+tmpf(2,i0-i-1,-1,k0-k  )*s0xm+tmpf(2,i0-i,-1,k0-k  )*s0x+tmpf(2,i0-i+1,-1,k0-k  )*s0xp)*shym       &
-                 +(+tmpf(2,i0-i-1, 0,k0-k  )*s0xm+tmpf(2,i0-i, 0,k0-k  )*s0x+tmpf(2,i0-i+1, 0,k0-k  )*s0xp)*shy        &
-                 +(+tmpf(2,i0-i-1,+1,k0-k  )*s0xm+tmpf(2,i0-i,+1,k0-k  )*s0x+tmpf(2,i0-i+1,+1,k0-k  )*s0xp)*shyp)*s0z  &
-               +(+(+tmpf(2,i0-i-1,-1,k0-k+1)*s0xm+tmpf(2,i0-i,-1,k0-k+1)*s0x+tmpf(2,i0-i+1,-1,k0-k+1)*s0xp)*shym       &
-                 +(+tmpf(2,i0-i-1, 0,k0-k+1)*s0xm+tmpf(2,i0-i, 0,k0-k+1)*s0x+tmpf(2,i0-i+1, 0,k0-k+1)*s0xp)*shy        &
-                 +(+tmpf(2,i0-i-1,+1,k0-k+1)*s0xm+tmpf(2,i0-i,+1,k0-k+1)*s0x+tmpf(2,i0-i+1,+1,k0-k+1)*s0xp)*shyp)*s0zp
+          bpy = (+(+tmpf(2,i-1,j-1,k-1)*shxm+tmpf(2,i,j-1,k-1)*shx+tmpf(2,i+1,j-1,k-1)*shxp)*shym       &
+                 +(+tmpf(2,i-1,j  ,k-1)*shxm+tmpf(2,i,j  ,k-1)*shx+tmpf(2,i+1,j  ,k-1)*shxp)*shy        &
+                 +(+tmpf(2,i-1,j+1,k-1)*shxm+tmpf(2,i,j+1,k-1)*shx+tmpf(2,i+1,j+1,k-1)*shxp)*shyp)*shzm &
+               +(+(+tmpf(2,i-1,j-1,k  )*shxm+tmpf(2,i,j-1,k  )*shx+tmpf(2,i+1,j-1,k  )*shxp)*shym       &
+                 +(+tmpf(2,i-1,j  ,k  )*shxm+tmpf(2,i,j  ,k  )*shx+tmpf(2,i+1,j  ,k  )*shxp)*shy        &
+                 +(+tmpf(2,i-1,j+1,k  )*shxm+tmpf(2,i,j+1,k  )*shx+tmpf(2,i+1,j+1,k  )*shxp)*shyp)*shz  &
+               +(+(+tmpf(2,i-1,j-1,k+1)*shxm+tmpf(2,i,j-1,k+1)*shx+tmpf(2,i+1,j-1,k+1)*shxp)*shym       &
+                 +(+tmpf(2,i-1,j  ,k+1)*shxm+tmpf(2,i,j  ,k+1)*shx+tmpf(2,i+1,j  ,k+1)*shxp)*shy        &
+                 +(+tmpf(2,i-1,j+1,k+1)*shxm+tmpf(2,i,j+1,k+1)*shx+tmpf(2,i+1,j+1,k+1)*shxp)*shyp)*shzp
 
-          bpz = (+(+tmpf(3,i0-i-1,j0-j-1,-1)*s0xm+tmpf(3,i0-i,j0-j-1,-1)*s0x+tmpf(3,i0-i+1,j0-j-1,-1)*s0xp)*s0ym       &
-                 +(+tmpf(3,i0-i-1,j0-j  ,-1)*s0xm+tmpf(3,i0-i,j0-j  ,-1)*s0x+tmpf(3,i0-i+1,j0-j  ,-1)*s0xp)*s0y        &
-                 +(+tmpf(3,i0-i-1,j0-j+1,-1)*s0xm+tmpf(3,i0-i,j0-j+1,-1)*s0x+tmpf(3,i0-i+1,j0-j+1,-1)*s0xp)*s0yp)*shzm &
-               +(+(+tmpf(3,i0-i-1,j0-j-1, 0)*s0xm+tmpf(3,i0-i,j0-j-1, 0)*s0x+tmpf(3,i0-i+1,j0-j-1, 0)*s0xp)*s0ym       &
-                 +(+tmpf(3,i0-i-1,j0-j  , 0)*s0xm+tmpf(3,i0-i,j0-j  , 0)*s0x+tmpf(3,i0-i+1,j0-j  , 0)*s0xp)*s0y        &
-                 +(+tmpf(3,i0-i-1,j0-j+1, 0)*s0xm+tmpf(3,i0-i,j0-j+1, 0)*s0x+tmpf(3,i0-i+1,j0-j+1, 0)*s0xp)*s0yp)*shz  &
-               +(+(+tmpf(3,i0-i-1,j0-j-1,+1)*s0xm+tmpf(3,i0-i,j0-j-1,+1)*s0x+tmpf(3,i0-i+1,j0-j-1,+1)*s0xp)*s0ym       &
-                 +(+tmpf(3,i0-i-1,j0-j  ,+1)*s0xm+tmpf(3,i0-i,j0-j  ,+1)*s0x+tmpf(3,i0-i+1,j0-j  ,+1)*s0xp)*s0y        &
-                 +(+tmpf(3,i0-i-1,j0-j+1,+1)*s0xm+tmpf(3,i0-i,j0-j+1,+1)*s0x+tmpf(3,i0-i+1,j0-j+1,+1)*s0xp)*s0yp)*shzp
+          bpz = (+(+tmpf(3,i-1,j-1,k-1)*shxm+tmpf(3,i,j-1,k-1)*shx+tmpf(3,i+1,j-1,k-1)*shxp)*shym       &
+                 +(+tmpf(3,i-1,j  ,k-1)*shxm+tmpf(3,i,j  ,k-1)*shx+tmpf(3,i+1,j  ,k-1)*shxp)*shy        &
+                 +(+tmpf(3,i-1,j+1,k-1)*shxm+tmpf(3,i,j+1,k-1)*shx+tmpf(3,i+1,j+1,k-1)*shxp)*shyp)*shzm &
+               +(+(+tmpf(3,i-1,j-1,k  )*shxm+tmpf(3,i,j-1,k  )*shx+tmpf(3,i+1,j-1,k  )*shxp)*shym       &
+                 +(+tmpf(3,i-1,j  ,k  )*shxm+tmpf(3,i,j  ,k  )*shx+tmpf(3,i+1,j  ,k  )*shxp)*shy        &
+                 +(+tmpf(3,i-1,j+1,k  )*shxm+tmpf(3,i,j+1,k  )*shx+tmpf(3,i+1,j+1,k  )*shxp)*shyp)*shz  &
+               +(+(+tmpf(3,i-1,j-1,k+1)*shxm+tmpf(3,i,j-1,k+1)*shx+tmpf(3,i+1,j-1,k+1)*shxp)*shym       &
+                 +(+tmpf(3,i-1,j  ,k+1)*shxm+tmpf(3,i,j  ,k+1)*shx+tmpf(3,i+1,j  ,k+1)*shxp)*shy        &
+                 +(+tmpf(3,i-1,j+1,k+1)*shxm+tmpf(3,i,j+1,k+1)*shx+tmpf(3,i+1,j+1,k+1)*shxp)*shyp)*shzp
 
-          epx = (+(+tmpf(4,i0-i-1,-1,-1)*s0xm+tmpf(4,i0-i,-1,-1)*s0x+tmpf(4,i0-i+1,-1,-1)*s0xp)*shym       &
-                 +(+tmpf(4,i0-i-1, 0,-1)*s0xm+tmpf(4,i0-i, 0,-1)*s0x+tmpf(4,i0-i+1, 0,-1)*s0xp)*shy        &
-                 +(+tmpf(4,i0-i-1,+1,-1)*s0xm+tmpf(4,i0-i,+1,-1)*s0x+tmpf(4,i0-i+1,+1,-1)*s0xp)*shyp)*shzm &
-               +(+(+tmpf(4,i0-i-1,-1, 0)*s0xm+tmpf(4,i0-i,-1, 0)*s0x+tmpf(4,i0-i+1,-1, 0)*s0xp)*shym       &
-                 +(+tmpf(4,i0-i-1, 0, 0)*s0xm+tmpf(4,i0-i, 0, 0)*s0x+tmpf(4,i0-i+1, 0, 0)*s0xp)*shy        &
-                 +(+tmpf(4,i0-i-1,+1, 0)*s0xm+tmpf(4,i0-i,+1, 0)*s0x+tmpf(4,i0-i+1,+1, 0)*s0xp)*shyp)*shz  &
-               +(+(+tmpf(4,i0-i-1,-1,+1)*s0xm+tmpf(4,i0-i,-1,+1)*s0x+tmpf(4,i0-i+1,-1,+1)*s0xp)*shym       &
-                 +(+tmpf(4,i0-i-1, 0,+1)*s0xm+tmpf(4,i0-i, 0,+1)*s0x+tmpf(4,i0-i+1, 0,+1)*s0xp)*shy        &
-                 +(+tmpf(4,i0-i-1,+1,+1)*s0xm+tmpf(4,i0-i,+1,+1)*s0x+tmpf(4,i0-i+1,+1,+1)*s0xp)*shyp)*shzp
+          epx = (+(+tmpf(4,i-1,j-1,k-1)*shxm+tmpf(4,i,j-1,k-1)*shx+tmpf(4,i+1,j-1,k-1)*shxp)*shym       &
+                 +(+tmpf(4,i-1,j  ,k-1)*shxm+tmpf(4,i,j  ,k-1)*shx+tmpf(4,i+1,j  ,k-1)*shxp)*shy        &
+                 +(+tmpf(4,i-1,j+1,k-1)*shxm+tmpf(4,i,j+1,k-1)*shx+tmpf(4,i+1,j+1,k-1)*shxp)*shyp)*shzm &
+               +(+(+tmpf(4,i-1,j-1,k  )*shxm+tmpf(4,i,j-1,k  )*shx+tmpf(4,i+1,j-1,k  )*shxp)*shym       &
+                 +(+tmpf(4,i-1,j  ,k  )*shxm+tmpf(4,i,j  ,k  )*shx+tmpf(4,i+1,j  ,k  )*shxp)*shy        &
+                 +(+tmpf(4,i-1,j+1,k  )*shxm+tmpf(4,i,j+1,k  )*shx+tmpf(4,i+1,j+1,k  )*shxp)*shyp)*shz  &
+               +(+(+tmpf(4,i-1,j-1,k+1)*shxm+tmpf(4,i,j-1,k+1)*shx+tmpf(4,i+1,j-1,k+1)*shxp)*shym       &
+                 +(+tmpf(4,i-1,j  ,k+1)*shxm+tmpf(4,i,j  ,k+1)*shx+tmpf(4,i+1,j  ,k+1)*shxp)*shy        &
+                 +(+tmpf(4,i-1,j+1,k+1)*shxm+tmpf(4,i,j+1,k+1)*shx+tmpf(4,i+1,j+1,k+1)*shxp)*shyp)*shzp
 
-          epy = (+(+tmpf(5,-1,j0-j-1,-1)*shxm+tmpf(5,0,j0-j-1,-1)*shx+tmpf(5,+1,j0-j-1,-1)*shxp)*s0ym       &
-                 +(+tmpf(5,-1,j0-j  ,-1)*shxm+tmpf(5,0,j0-j  ,-1)*shx+tmpf(5,+1,j0-j  ,-1)*shxp)*s0y        &
-                 +(+tmpf(5,-1,j0-j+1,-1)*shxm+tmpf(5,0,j0-j+1,-1)*shx+tmpf(5,+1,j0-j+1,-1)*shxp)*s0yp)*shzm &
-               +(+(+tmpf(5,-1,j0-j-1, 0)*shxm+tmpf(5,0,j0-j-1, 0)*shx+tmpf(5,+1,j0-j-1, 0)*shxp)*s0ym       &
-                 +(+tmpf(5,-1,j0-j  , 0)*shxm+tmpf(5,0,j0-j  , 0)*shx+tmpf(5,+1,j0-j  , 0)*shxp)*s0y        &
-                 +(+tmpf(5,-1,j0-j+1, 0)*shxm+tmpf(5,0,j0-j+1, 0)*shx+tmpf(5,+1,j0-j+1, 0)*shxp)*s0yp)*shz  &
-               +(+(+tmpf(5,-1,j0-j-1,+1)*shxm+tmpf(5,0,j0-j-1,+1)*shx+tmpf(5,+1,j0-j-1,+1)*shxp)*s0ym       &
-                 +(+tmpf(5,-1,j0-j  ,+1)*shxm+tmpf(5,0,j0-j  ,+1)*shx+tmpf(5,+1,j0-j  ,+1)*shxp)*s0y        &
-                 +(+tmpf(5,-1,j0-j+1,+1)*shxm+tmpf(5,0,j0-j+1,+1)*shx+tmpf(5,+1,j0-j+1,+1)*shxp)*s0yp)*shzp
+          epy = (+(+tmpf(5,i-1,j-1,k-1)*shxm+tmpf(5,i,j-1,k-1)*shx+tmpf(5,i+1,j-1,k-1)*shxp)*shym       &
+                 +(+tmpf(5,i-1,j  ,k-1)*shxm+tmpf(5,i,j  ,k-1)*shx+tmpf(5,i+1,j  ,k-1)*shxp)*shy        &
+                 +(+tmpf(5,i-1,j+1,k-1)*shxm+tmpf(5,i,j+1,k-1)*shx+tmpf(5,i+1,j+1,k-1)*shxp)*shyp)*shzm &
+               +(+(+tmpf(5,i-1,j-1,k  )*shxm+tmpf(5,i,j-1,k  )*shx+tmpf(5,i+1,j-1,k  )*shxp)*shym       &
+                 +(+tmpf(5,i-1,j  ,k  )*shxm+tmpf(5,i,j  ,k  )*shx+tmpf(5,i+1,j  ,k  )*shxp)*shy        &
+                 +(+tmpf(5,i-1,j+1,k  )*shxm+tmpf(5,i,j+1,k  )*shx+tmpf(5,i+1,j+1,k  )*shxp)*shyp)*shz  &
+               +(+(+tmpf(5,i-1,j-1,k+1)*shxm+tmpf(5,i,j-1,k+1)*shx+tmpf(5,i+1,j-1,k+1)*shxp)*shym       &
+                 +(+tmpf(5,i-1,j  ,k+1)*shxm+tmpf(5,i,j  ,k+1)*shx+tmpf(5,i+1,j  ,k+1)*shxp)*shy        &
+                 +(+tmpf(5,i-1,j+1,k+1)*shxm+tmpf(5,i,j+1,k+1)*shx+tmpf(5,i+1,j+1,k+1)*shxp)*shyp)*shzp
 
-          epz = (+(+tmpf(6,-1,-1,k0-k-1)*shxm+tmpf(6,0,-1,k0-k-1)*shx+tmpf(6,+1,-1,k0-k-1)*shxp)*shym       &
-                 +(+tmpf(6,-1, 0,k0-k-1)*shxm+tmpf(6,0, 0,k0-k-1)*shx+tmpf(6,+1, 0,k0-k-1)*shxp)*shy        &
-                 +(+tmpf(6,-1,+1,k0-k-1)*shxm+tmpf(6,0,+1,k0-k-1)*shx+tmpf(6,+1,+1,k0-k-1)*shxp)*shyp)*s0zm &
-               +(+(+tmpf(6,-1,-1,k0-k  )*shxm+tmpf(6,0,-1,k0-k  )*shx+tmpf(6,+1,-1,k0-k  )*shxp)*shym       &
-                 +(+tmpf(6,-1, 0,k0-k  )*shxm+tmpf(6,0, 0,k0-k  )*shx+tmpf(6,+1, 0,k0-k  )*shxp)*shy        &
-                 +(+tmpf(6,-1,+1,k0-k  )*shxm+tmpf(6,0,+1,k0-k  )*shx+tmpf(6,+1,+1,k0-k  )*shxp)*shyp)*s0z  &
-               +(+(+tmpf(6,-1,-1,k0-k+1)*shxm+tmpf(6,0,-1,k0-k+1)*shx+tmpf(6,+1,-1,k0-k+1)*shxp)*shym       &
-                 +(+tmpf(6,-1, 0,k0-k+1)*shxm+tmpf(6,0, 0,k0-k+1)*shx+tmpf(6,+1, 0,k0-k+1)*shxp)*shy        &
-                 +(+tmpf(6,-1,+1,k0-k+1)*shxm+tmpf(6,0,+1,k0-k+1)*shx+tmpf(6,+1,+1,k0-k+1)*shxp)*shyp)*s0zp
+          epz = (+(+tmpf(6,i-1,j-1,k-1)*shxm+tmpf(6,i,j-1,k-1)*shx+tmpf(6,i+1,j-1,k-1)*shxp)*shym       &
+                 +(+tmpf(6,i-1,j  ,k-1)*shxm+tmpf(6,i,j  ,k-1)*shx+tmpf(6,i+1,j  ,k-1)*shxp)*shy        &
+                 +(+tmpf(6,i-1,j+1,k-1)*shxm+tmpf(6,i,j+1,k-1)*shx+tmpf(6,i+1,j+1,k-1)*shxp)*shyp)*shzm &
+               +(+(+tmpf(6,i-1,j-1,k  )*shxm+tmpf(6,i,j-1,k  )*shx+tmpf(6,i+1,j-1,k  )*shxp)*shym       &
+                 +(+tmpf(6,i-1,j  ,k  )*shxm+tmpf(6,i,j  ,k  )*shx+tmpf(6,i+1,j  ,k  )*shxp)*shy        &
+                 +(+tmpf(6,i-1,j+1,k  )*shxm+tmpf(6,i,j+1,k  )*shx+tmpf(6,i+1,j+1,k  )*shxp)*shyp)*shz  &
+               +(+(+tmpf(6,i-1,j-1,k+1)*shxm+tmpf(6,i,j-1,k+1)*shx+tmpf(6,i+1,j-1,k+1)*shxp)*shym       &
+                 +(+tmpf(6,i-1,j  ,k+1)*shxm+tmpf(6,i,j  ,k+1)*shx+tmpf(6,i+1,j  ,k+1)*shxp)*shy        &
+                 +(+tmpf(6,i-1,j+1,k+1)*shxm+tmpf(6,i,j+1,k+1)*shx+tmpf(6,i+1,j+1,k+1)*shxp)*shyp)*shzp
 
           !accel.
           uvm1 = up(4,ii,j,k,isp)+fac1*epx
