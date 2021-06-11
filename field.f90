@@ -131,7 +131,6 @@ contains
                           jup,jdown,kup,kdown,mnpr,nstat,ncomw,nerr)
 
     !===== Update fields and particles ======
-    
 !$OMP PARALLEL DO PRIVATE(i,j,k,ieq)
     do k=nzs-2,nze+2
     do j=nys-2,nye+2
@@ -184,8 +183,11 @@ contains
     do j=nys,nye
     do i=nxs,nxe-1
 
+!OCL UNROLL('FULL')
        pjx(-2:2,-2:2,-2:2) = 0.D0
+!OCL UNROLL('FULL')
        pjy(-2:2,-2:2,-2:2) = 0.D0
+!OCL UNROLL('FULL')
        pjz(-2:2,-2:2,-2:2) = 0.D0
  
        isp=1

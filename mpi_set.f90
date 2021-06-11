@@ -35,12 +35,12 @@ contains
     call MPI_COMM_RANK(ncomw, nrank, nerr)
 
     if(nsize /= nproc) then
-       stop 'error in proc no.'
+       write(*,*) 'error in proc no.'
        call MPI_ABORT(ncomw, 9, nerr)
        call MPI_FINALIZE(nerr)
     endif
     if(nsize /= (nproc_i*nproc_j*nproc_k)) then
-       stop 'error in proc no.'
+       write(*,*) 'error in proc no.'
        call MPI_ABORT(ncomw, 9, nerr)
        call MPI_FINALIZE(nerr)
     endif

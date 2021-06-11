@@ -32,7 +32,7 @@ program main
 !
 !**********************************************************************c
 
-  etime0 = omp_get_wtime()
+  if(nrank == nroot) etime0 = omp_get_wtime()
 
   call init__set_param
   call MPI_BCAST(etime0,1,mnpr,nroot,ncomw,nerr)

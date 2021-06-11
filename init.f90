@@ -39,11 +39,11 @@ contains
 !*********** End of MPI settings  ***************!
 
 !*********** Memory Allocations  ****************!
-    allocate(np2(nys:nye,nzs:nze,nsp))
-    allocate(cumcnt(nxgs:nxge,nys:nye,nzs:nze,nsp))
-    allocate(uf(6,nxgs-2:nxge+2,nys-2:nye+2,nzs-2:nze+2))
-    allocate(up(6,np,nys:nye,nzs:nze,nsp))
-    allocate(gp(6,np,nys:nye,nzs:nze,nsp))
+    allocate(np2(nys:nye,nzs:nze,1:nsp))
+    allocate(cumcnt(nxgs:nxge,nys:nye,nzs:nze,1:nsp))
+    allocate(uf(1:6,nxgs-2:nxge+2,nys-2:nye+2,nzs-2:nze+2))
+    allocate(up(1:6,1:np,nys:nye,nzs:nze,1:nsp))
+    allocate(gp(1:6,1:np,nys:nye,nzs:nze,1:nsp))
     allocate(den(nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:nsp))
     allocate(vel(nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:3,1:nsp))
     allocate(temp(nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:3,1:nsp))
@@ -195,10 +195,10 @@ contains
              call random_number(bb)
              call random_number(cc)
 
-             up(4,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*(2.*bb-1)
-             up(5,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*cos(2.*pi*cc)
-             up(6,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*sin(2.*pi*cc)
-             gamp = dsqrt(1.D0+(up(4,ii,j,k,isp)**2+up(5,ii,j,k,isp)**2+up(6,ii,j,k,isp)**2)/c**2)
+             up(4,ii,j,k,isp) = sd*sqrt(-2.*log(aa))*(2.*bb-1)
+             up(5,ii,j,k,isp) = sd*sqrt(-2.*log(aa))*2.*sqrt(bb*(1.-bb))*cos(2.*pi*cc)
+             up(6,ii,j,k,isp) = sd*sqrt(-2.*log(aa))*2.*sqrt(bb*(1.-bb))*sin(2.*pi*cc)
+             gamp = sqrt(1.D0+(up(4,ii,j,k,isp)**2+up(5,ii,j,k,isp)**2+up(6,ii,j,k,isp)**2)/c**2)
 
              call random_number(cc)
 
@@ -294,10 +294,10 @@ contains
              call random_number(bb)
              call random_number(cc)
              
-             up(4,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*(2.*bb-1)
-             up(5,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*cos(2.*pi*cc)
-             up(6,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*sin(2.*pi*cc)
-             gamp = dsqrt(1.D0+(up(4,ii,j,k,isp)**2+up(5,ii,j,k,isp)**2+up(6,ii,j,k,isp)**2)/c**2)
+             up(4,ii,j,k,isp) = sd*sqrt(-2.*log(aa))*(2.*bb-1)
+             up(5,ii,j,k,isp) = sd*sqrt(-2.*log(aa))*2.*sqrt(bb*(1.-bb))*cos(2.*pi*cc)
+             up(6,ii,j,k,isp) = sd*sqrt(-2.*log(aa))*2.*sqrt(bb*(1.-bb))*sin(2.*pi*cc)
+             gamp = sqrt(1.D0+(up(4,ii,j,k,isp)**2+up(5,ii,j,k,isp)**2+up(6,ii,j,k,isp)**2)/c**2)
 
              call random_number(cc)
 
@@ -375,10 +375,10 @@ contains
     !MAXWELLIAN DISTRIBUTION
     do isp=1,nsp
        if(isp == 1) then 
-          sd = vti/dsqrt(2.0D0)
+          sd = vti/sqrt(2.0D0)
        endif
        if(isp == 2) then
-          sd = vte/dsqrt(2.0D0)
+          sd = vte/sqrt(2.0D0)
        endif
 
 !$OMP PARALLEL DO PRIVATE(ii,j,k,aa,bb,cc,gamp)
@@ -393,10 +393,10 @@ contains
              call random_number(bb)
              call random_number(cc)
 
-             up(4,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*(2.*bb-1)
-             up(5,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*cos(2.*pi*cc)
-             up(6,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*sin(2.*pi*cc)
-             gamp = dsqrt(1.D0+(up(4,ii,j,k,isp)**2+up(5,ii,j,k,isp)**2+up(6,ii,j,k,isp)**2)/c**2)
+             up(4,ii,j,k,isp) = sd*sqrt(-2.*log(aa))*(2.*bb-1)
+             up(5,ii,j,k,isp) = sd*sqrt(-2.*log(aa))*2.*sqrt(bb*(1.-bb))*cos(2.*pi*cc)
+             up(6,ii,j,k,isp) = sd*sqrt(-2.*log(aa))*2.*sqrt(bb*(1.-bb))*sin(2.*pi*cc)
+             gamp = sqrt(1.D0+(up(4,ii,j,k,isp)**2+up(5,ii,j,k,isp)**2+up(6,ii,j,k,isp)**2)/c**2)
 
              call random_number(cc)
 
