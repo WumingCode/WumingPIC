@@ -47,6 +47,13 @@ contains
     allocate(den(nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:nsp))
     allocate(vel(nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:3,1:nsp))
     allocate(temp(nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:3,1:nsp))
+    
+!$OMP WORKSHARE
+    up(1:6,1:np,nys:nye,nzs:nze,1:nsp) = 0.0d0
+    den(nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:nsp) = 0.0d0
+    vel(nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:3,1:nsp) = 0.0d0
+    temp(nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:3,1:nsp) = 0.0d0
+!$OMP END WORKSHARE
 !***************** End of  **********************!
 
 !*********** Random seed *************!
