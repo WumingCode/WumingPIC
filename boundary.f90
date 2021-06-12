@@ -454,7 +454,8 @@ contains
           np2(j,k,isp) = np2(j,k,isp)+cnt(j,k)
           if(np2(j,k,isp) > np) then
              write(*,*)"memory over (np2 > np)",np,np2(j,k,isp),j,k,isp
-             stop
+             call MPI_ABORT(ncomw, 9, nerr)
+             call MPI_FINALIZE(nerr)
           endif
        enddo
        enddo

@@ -439,6 +439,11 @@ contains
     real(8)            :: ap(nxs:nxe,nys:nye,nzs:nze)
     real(8)            :: bff_snd(2),bff_rcv(2)
 
+!$OMP WORKSHARE
+    phi(nxs-1:nxe+1,nys-1:nye+1,nzs-1:nze+1) = 0.0d0
+    p(nxs-1:nxe+1,nys-1:nye+1,nzs-1:nze+1) = 0.0d0
+!$OMP END WORKSHARE
+
     do l=1,3
 
        select case(l)

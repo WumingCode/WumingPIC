@@ -12,7 +12,7 @@ module const
   integer, parameter :: nyge    = nygs+ny-1 ! END POINT
   integer, parameter :: nzgs    = 2         ! START POINT IN Z
   integer, parameter :: nzge    = nzgs+nz-1 ! END POINT
-  integer, parameter :: np      = 40*nx    ! MAX. NUMBER OF PARTICLES IN COLUMN AT (Y,Z)
+  integer, parameter :: np      = 20*nx    ! MAX. NUMBER OF PARTICLES IN COLUMN AT (Y,Z)
   integer, parameter :: nsp     = 2         ! NUMBER OF PARTICLE SPECIES
   integer, parameter :: nproc   = 288      ! NUMBER OF PROCESSES
   integer, parameter :: nproc_i = 1         ! NUMBER OF PROCESSES IN X
