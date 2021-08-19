@@ -37,11 +37,11 @@ contains
 
              ipos = int(up(1,ii,j,k,isp)*d_delx)
 
-             if(ipos <= nxs-1)then
-                up(1,ii,j,k,isp) = 2.0*nxs*delx-up(1,ii,j,k,isp)
+             if(ipos < nxs+1)then
+                up(1,ii,j,k,isp) = 2.0*(nxs+1)*delx-up(1,ii,j,k,isp)
                 up(4,ii,j,k,isp) = -up(4,ii,j,k,isp)
-             else if(ipos >= nxe)then
-                up(1,ii,j,k,isp) = 2.0*nxe*delx-up(1,ii,j,k,isp)
+             else if(ipos >= nxe-1)then
+                up(1,ii,j,k,isp) = 2.0*(nxe-1)*delx-up(1,ii,j,k,isp)
                 up(4,ii,j,k,isp) = -up(4,ii,j,k,isp)
              endif
 
@@ -144,10 +144,21 @@ contains
 
 !$OMP PARALLEL
 
-!$OMP WORKSHARE
-       cnt(nys-1:nye+1,nzs-1:nze+1) = 0
-       cnt2(nys:nye,nzs:nze) = 0
-!$OMP END WORKSHARE
+!$OMP DO PRIVATE(j,k)
+       do k=nzs-1,nze+1
+       do j=nys-1,nye+1
+          cnt(j,k) = 0
+       enddo
+       enddo
+!$OMP END DO NOWAIT
+
+!$OMP DO PRIVATE(j,k)
+       do k=nzs,nze
+       do j=nys,nye
+         cnt2(j,k) = 0
+       enddo
+       enddo
+!$OMP END DO
 
 !$OMP DO PRIVATE(ii,j,k,jpos,kpos)
        do k=nzs,nze
@@ -222,7 +233,9 @@ contains
                          ncomw,nstat,nerr)
 
        j=nye
-!$OMP PARALLEL DO PRIVATE(iii,ii,k)
+!$OMP PARALLEL
+
+!$OMP DO PRIVATE(iii,ii,k)
        do k=nzs-1,nze+1
           do ii=cnt(j,k)+1,cnt(j,k)+cnt_tmp_j(k)
              iii = 6*(ii-1-cnt(j,k)+sum(cnt_tmp_j(nzs-1:k-1)))
@@ -235,11 +248,14 @@ contains
              bff_ptcl(6+6*(ii-1),j,k) = ptcl_rcv(6+iii)
           enddo
        enddo
-!$OMP END PARALLEL DO
+!$OMP END DO
+!$OMP DO PRIVATE(k)
+       do k=nzs-1,nze+1
+          cnt(nye,k) = cnt(nye,k)+cnt_tmp_j(k)
+       enddo
+!$OMP END DO
 
-!$OMP PARALLEL WORKSHARE
-       cnt(nye,nzs-1:nze+1) = cnt(nye,nzs-1:nze+1)+cnt_tmp_j(nzs-1:nze+1)
-!$OMP END PARALLEL WORKSHARE
+!$OMP END PARALLEL
 
        deallocate(ptcl_snd)
        deallocate(ptcl_rcv)
@@ -276,7 +292,9 @@ contains
                          ncomw,nstat,nerr)
 
        j=nys
-!$OMP PARALLEL DO PRIVATE(iii,ii,k)
+!$OMP PARALLEL
+
+!$OMP DO PRIVATE(iii,ii,k)
        do k=nzs-1,nze+1
           do ii=cnt(j,k)+1,cnt(j,k)+cnt_tmp_j(k)
              iii = 6*(ii-1-cnt(j,k)+sum(cnt_tmp_j(nzs-1:k-1)))
@@ -289,11 +307,14 @@ contains
              bff_ptcl(6+6*(ii-1),j,k) = ptcl_rcv(6+iii)
           enddo
        enddo
-!$OMP END PARALLEL DO
+!$OMP END DO
+!$OMP DO PRIVATE(k)
+       do k=nzs-1,nze+1
+          cnt(nys,k) = cnt(nys,k)+cnt_tmp_j(k)
+       enddo
+!$OMP END DO
 
-!$OMP PARALLEL WORKSHARE
-       cnt(nys,nzs-1:nze+1) = cnt(nys,nzs-1:nze+1)+cnt_tmp_j(nzs-1:nze+1)
-!$OMP END PARALLEL WORKSHARE
+!$OMP END PARALLEL
 
        deallocate(ptcl_snd)
        deallocate(ptcl_rcv)
@@ -329,7 +350,9 @@ contains
                          ncomw,nstat,nerr)
 
        k=nze
-!$OMP PARALLEL DO PRIVATE(iii,ii,j)
+!$OMP PARALLEL
+
+!$OMP DO PRIVATE(iii,ii,j)
        do j=nys,nye
           do ii=cnt(j,k)+1,cnt(j,k)+cnt_tmp_k(j)
              iii = 6*(ii-1-cnt(j,k)+sum(cnt_tmp_k(nys:j-1)))
@@ -342,11 +365,14 @@ contains
              bff_ptcl(6+6*(ii-1),j,k) = ptcl_rcv(6+iii)
           enddo
        enddo
-!$OMP END PARALLEL DO
+!$OMP END DO
+!$OMP DO PRIVATE(j)
+       do j=nys,nye
+          cnt(j,nze) = cnt(j,nze)+cnt_tmp_k(j)
+       enddo
+!$OMP END DO
 
-!$OMP PARALLEL WORKSHARE
-       cnt(nys:nye,nze) = cnt(nys:nye,nze)+cnt_tmp_k(nys:nye)
-!$OMP END PARALLEL WORKSHARE
+!$OMP END PARALLEL
 
        deallocate(ptcl_snd)
        deallocate(ptcl_rcv)
@@ -382,7 +408,9 @@ contains
                          ncomw,nstat,nerr)
 
        k=nzs
-!$OMP PARALLEL DO PRIVATE(iii,ii,j)
+!$OMP PARALLEL
+
+!$OMP DO PRIVATE(iii,ii,j)
        do j=nys,nye
           do ii=cnt(j,k)+1,cnt(j,k)+cnt_tmp_k(j)
              iii = 6*(ii-1-cnt(j,k)+sum(cnt_tmp_k(nys:j-1)))
@@ -395,11 +423,14 @@ contains
              bff_ptcl(6+6*(ii-1),j,k) = ptcl_rcv(6+iii)
           enddo
        enddo
-!$OMP END PARALLEL DO
+!$OMP END DO
+!$OMP DO PRIVATE(j)
+       do j=nys,nye
+          cnt(j,nzs) = cnt(j,nzs)+cnt_tmp_k(j)
+       enddo
+!$OMP END DO
 
-!$OMP PARALLEL WORKSHARE
-       cnt(nys:nye,nzs) = cnt(nys:nye,nzs)+cnt_tmp_k(nys:nye)
-!$OMP END PARALLEL WORKSHARE
+!$OMP END PARALLEL 
 
        deallocate(ptcl_snd)
        deallocate(ptcl_rcv)
@@ -988,20 +1019,6 @@ contains
        uj(1,i,j,nzs-1) = bff_rcv_k(ii+1)
        uj(2,i,j,nzs-1) = bff_rcv_k(ii+2)
        uj(3,i,j,nzs-1) = bff_rcv_k(ii+3)
-    enddo
-    enddo
-!$OMP END PARALLEL DO
-
-!---  in x-direction ---
-
-!$OMP PARALLEL DO PRIVATE(j,k)
-    do k=nzs-1,nze+1
-    do j=nys-1,nye+1
-       uj(2,nxs  ,j,k) = +uj(2,nxs  ,j,k)-uj(2,nxs-1,j,k)
-       uj(3,nxs  ,j,k) = +uj(3,nxs  ,j,k)-uj(3,nxs-1,j,k)
-
-       uj(2,nxe-1,j,k) = +uj(2,nxe-1,j,k)-uj(2,nxe  ,j,k)
-       uj(3,nxe-1,j,k) = +uj(3,nxe-1,j,k)-uj(3,nxe  ,j,k)
     enddo
     enddo
 !$OMP END PARALLEL DO

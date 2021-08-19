@@ -39,14 +39,21 @@ contains
 !*********** End of MPI settings  ***************!
 
 !*********** Memory Allocations  ****************!
-    allocate(np2(nys:nye,nzs:nze,nsp))
-    allocate(cumcnt(nxgs:nxge,nys:nye,nzs:nze,nsp))
-    allocate(uf(6,nxgs-2:nxge+2,nys-2:nye+2,nzs-2:nze+2))
-    allocate(up(6,np,nys:nye,nzs:nze,nsp))
-    allocate(gp(6,np,nys:nye,nzs:nze,nsp))
+    allocate(np2(nys:nye,nzs:nze,1:nsp))
+    allocate(cumcnt(nxgs:nxge,nys:nye,nzs:nze,1:nsp))
+    allocate(uf(1:6,nxgs-2:nxge+2,nys-2:nye+2,nzs-2:nze+2))
+    allocate(up(1:6,1:np,nys:nye,nzs:nze,1:nsp))
+    allocate(gp(1:6,1:np,nys:nye,nzs:nze,1:nsp))
     allocate(den(nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:nsp))
     allocate(vel(nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:3,1:nsp))
     allocate(temp(nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:3,1:nsp))
+    
+!$OMP WORKSHARE
+    up(1:6,1:np,nys:nye,nzs:nze,1:nsp) = 0.0d0
+    den(nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:nsp) = 0.0d0
+    vel(nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:3,1:nsp) = 0.0d0
+    temp(nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:3,1:nsp) = 0.0d0
+!$OMP END WORKSHARE
 !***************** End of  **********************!
 
 !*********** Random seed *************!
@@ -78,7 +85,7 @@ contains
     u0   = v0*gam0
 
     !INITIAL NUMBER OF PARTICLES IN COLUMN AT (Y, Z)
-    np2(nys:nye,nzs:nze,1:nsp) = n0*(nxe-nxs)
+    np2(nys:nye,nzs:nze,1:nsp) = n0*(nxe-nxs-2)
     if(nrank == nroot)then
        if(n0*(nxge-nxgs) > np)then
           write(*,*)'Too large number of particles'
@@ -91,10 +98,11 @@ contains
 !$OMP PARALLEL DO PRIVATE(i,j,k)
        do k=nzs,nze
        do j=nys,nye
-          cumcnt(nxs,j,k,isp) = 0
-          do i=nxs+1,nxe
+          cumcnt(nxs:nxs+1,j,k,isp) = 0
+          do i=nxs+2,nxe-1
              cumcnt(i,j,k,isp) = cumcnt(i-1,j,k,isp)+n0
           enddo
+          cumcnt(nxe,j,k,isp) = cumcnt(nxe-1,j,k,isp)
           if(cumcnt(nxe,j,k,isp) /= np2(j,k,isp))then
              write(*,*)'error in cumcnt'
              stop
@@ -158,7 +166,7 @@ contains
     do k=nzs,nze
     do j=nys,nye
        do ii=1,np2(j,k,isp)
-          up(1,ii,j,k,1) = nxs*delx+(nxe-nxs)*delx*ii/(np2(j,k,isp)+1)
+          up(1,ii,j,k,1) = (nxs+1)*delx+(nxe-nxs-2)*delx*ii/(np2(j,k,isp)+1)
           up(1,ii,j,k,2) = up(1,ii,j,k,1)
 
           call random_number(aa)
@@ -195,10 +203,10 @@ contains
              call random_number(bb)
              call random_number(cc)
 
-             up(4,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*(2.*bb-1)
-             up(5,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*cos(2.*pi*cc)
-             up(6,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*sin(2.*pi*cc)
-             gamp = dsqrt(1.D0+(up(4,ii,j,k,isp)**2+up(5,ii,j,k,isp)**2+up(6,ii,j,k,isp)**2)/c**2)
+             up(4,ii,j,k,isp) = sd*sqrt(-2.*log(aa))*(2.*bb-1)
+             up(5,ii,j,k,isp) = sd*sqrt(-2.*log(aa))*2.*sqrt(bb*(1.-bb))*cos(2.*pi*cc)
+             up(6,ii,j,k,isp) = sd*sqrt(-2.*log(aa))*2.*sqrt(bb*(1.-bb))*sin(2.*pi*cc)
+             gamp = sqrt(1.D0+(up(4,ii,j,k,isp)**2+up(5,ii,j,k,isp)**2+up(6,ii,j,k,isp)**2)/c**2)
 
              call random_number(cc)
 
@@ -294,10 +302,10 @@ contains
              call random_number(bb)
              call random_number(cc)
              
-             up(4,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*(2.*bb-1)
-             up(5,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*cos(2.*pi*cc)
-             up(6,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*sin(2.*pi*cc)
-             gamp = dsqrt(1.D0+(up(4,ii,j,k,isp)**2+up(5,ii,j,k,isp)**2+up(6,ii,j,k,isp)**2)/c**2)
+             up(4,ii,j,k,isp) = sd*sqrt(-2.*log(aa))*(2.*bb-1)
+             up(5,ii,j,k,isp) = sd*sqrt(-2.*log(aa))*2.*sqrt(bb*(1.-bb))*cos(2.*pi*cc)
+             up(6,ii,j,k,isp) = sd*sqrt(-2.*log(aa))*2.*sqrt(bb*(1.-bb))*sin(2.*pi*cc)
+             gamp = sqrt(1.D0+(up(4,ii,j,k,isp)**2+up(5,ii,j,k,isp)**2+up(6,ii,j,k,isp)**2)/c**2)
 
              call random_number(cc)
 
@@ -356,7 +364,7 @@ contains
           ii2 = np2(j,k,1)+ii
           ii3 = np2(j,k,2)+ii
 
-          up(1,ii2,j,k,1) = nxe*delx+dx*(dn-ii+1.D0)/(dn+1.D0)
+          up(1,ii2,j,k,1) = (nxe-1)*delx+dx*(dn-ii+1.D0)/(dn+1.D0)
           up(1,ii3,j,k,2) = up(1,ii2,j,k,1)
 
           call random_number(aa)
@@ -375,10 +383,10 @@ contains
     !MAXWELLIAN DISTRIBUTION
     do isp=1,nsp
        if(isp == 1) then 
-          sd = vti/dsqrt(2.0D0)
+          sd = vti/sqrt(2.0D0)
        endif
        if(isp == 2) then
-          sd = vte/dsqrt(2.0D0)
+          sd = vte/sqrt(2.0D0)
        endif
 
 !$OMP PARALLEL DO PRIVATE(ii,j,k,aa,bb,cc,gamp)
@@ -393,10 +401,10 @@ contains
              call random_number(bb)
              call random_number(cc)
 
-             up(4,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*(2.*bb-1)
-             up(5,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*cos(2.*pi*cc)
-             up(6,ii,j,k,isp) = sd*dsqrt(-2.*dlog(aa))*2.*dsqrt(bb*(1.-bb))*sin(2.*pi*cc)
-             gamp = dsqrt(1.D0+(up(4,ii,j,k,isp)**2+up(5,ii,j,k,isp)**2+up(6,ii,j,k,isp)**2)/c**2)
+             up(4,ii,j,k,isp) = sd*sqrt(-2.*log(aa))*(2.*bb-1)
+             up(5,ii,j,k,isp) = sd*sqrt(-2.*log(aa))*2.*sqrt(bb*(1.-bb))*cos(2.*pi*cc)
+             up(6,ii,j,k,isp) = sd*sqrt(-2.*log(aa))*2.*sqrt(bb*(1.-bb))*sin(2.*pi*cc)
+             gamp = sqrt(1.D0+(up(4,ii,j,k,isp)**2+up(5,ii,j,k,isp)**2+up(6,ii,j,k,isp)**2)/c**2)
 
              call random_number(cc)
 

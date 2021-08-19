@@ -85,7 +85,7 @@ contains
     u0   = v0*gam0
 
     !INITIAL NUMBER OF PARTICLES IN COLUMN AT (Y, Z)
-    np2(nys:nye,nzs:nze,1:nsp) = n0*(nxe-nxs)
+    np2(nys:nye,nzs:nze,1:nsp) = n0*(nxe-nxs-2)
     if(nrank == nroot)then
        if(n0*(nxge-nxgs) > np)then
           write(*,*)'Too large number of particles'
@@ -98,10 +98,11 @@ contains
 !$OMP PARALLEL DO PRIVATE(i,j,k)
        do k=nzs,nze
        do j=nys,nye
-          cumcnt(nxs,j,k,isp) = 0
-          do i=nxs+1,nxe
+          cumcnt(nxs:nxs+1,j,k,isp) = 0
+          do i=nxs+2,nxe-1
              cumcnt(i,j,k,isp) = cumcnt(i-1,j,k,isp)+n0
           enddo
+          cumcnt(nxe,j,k,isp) = cumcnt(nxe-1,j,k,isp)
           if(cumcnt(nxe,j,k,isp) /= np2(j,k,isp))then
              write(*,*)'error in cumcnt'
              stop
@@ -165,7 +166,7 @@ contains
     do k=nzs,nze
     do j=nys,nye
        do ii=1,np2(j,k,isp)
-          up(1,ii,j,k,1) = nxs*delx+(nxe-nxs)*delx*ii/(np2(j,k,isp)+1)
+          up(1,ii,j,k,1) = (nxs+1)*delx+(nxe-nxs-2)*delx*ii/(np2(j,k,isp)+1)
           up(1,ii,j,k,2) = up(1,ii,j,k,1)
 
           call random_number(aa)
@@ -363,7 +364,7 @@ contains
           ii2 = np2(j,k,1)+ii
           ii3 = np2(j,k,2)+ii
 
-          up(1,ii2,j,k,1) = nxe*delx+dx*(dn-ii+1.D0)/(dn+1.D0)
+          up(1,ii2,j,k,1) = (nxe-1)*delx+dx*(dn-ii+1.D0)/(dn+1.D0)
           up(1,ii3,j,k,2) = up(1,ii2,j,k,1)
 
           call random_number(aa)
