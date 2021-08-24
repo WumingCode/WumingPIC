@@ -261,7 +261,8 @@ contains
           ii2 = np2(j,k,1)+ii
           ii3 = np2(j,k,2)+ii
 
-          up(1,ii2,j,k,1) = (nxe-1.D0+dx)*delx-dx*delx*ii/(dn+1.D0)
+          call random_number(aa)
+          up(1,ii2,j,k,1) = (nxe-2.D0+dx)*delx-dx*delx*aa
           up(1,ii3,j,k,2) = up(1,ii2,j,k,1)
 
           call random_number(aa)
@@ -276,7 +277,7 @@ contains
           ii2 = np2(j,k,1)+dn+ii
           ii3 = np2(j,k,2)+dn+ii
 
-          up(1,ii2,j,k,1) = (nxe-1.)*delx+delx*ii/(n0+1.D0)
+          up(1,ii2,j,k,1) = (nxe-2.)*delx+delx*ii/(n0+1.D0)
           up(1,ii3,j,k,2) = up(1,ii2,j,k,1)
 
           call random_number(aa)
@@ -331,8 +332,9 @@ contains
              endif
           enddo
           np2(j,k,isp) = np2(j,k,isp)+dn+n0
-          cumcnt(nxe-1,j,k,isp) = cumcnt(nxe-1,j,k,isp)+dn
-          cumcnt(nxe,j,k,isp) = cumcnt(nxe-1,j,k,isp)+n0
+          cumcnt(nxe-2,j,k,isp) = cumcnt(nxe-2,j,k,isp)+dn
+          cumcnt(nxe-1,j,k,isp) = cumcnt(nxe-1,j,k,isp)+n0+dn
+          cumcnt(nxe  ,j,k,isp) = cumcnt(nxe-1,j,k,isp)
        enddo
        enddo
 !$OMP END PARALLEL DO
@@ -434,12 +436,11 @@ contains
 !$OMP END PARALLEL DO
     enddo
 
-    do isp=1,nsp
 !$OMP WORKSHARE
-       np2(nys:nye,nzs:nze,isp) = np2(nys:nye,nzs:nze,isp)+dn
-       cumcnt(nxe,nys:nye,nzs:nze,isp) = cumcnt(nxe,nys:nye,nzs:nze,isp)+dn
+    np2(nys:nye,nzs:nze,1:nsp) = np2(nys:nye,nzs:nze,1:nsp)+dn
+    cumcnt(nxe-1,nys:nye,nzs:nze,1:nsp) = cumcnt(nxe-1,nys:nye,nzs:nze,1:nsp)+dn
+    cumcnt(nxe  ,nys:nye,nzs:nze,1:nsp) = cumcnt(nxe-1,nys:nye,nzs:nze,1:nsp)
 !$OMP END WORKSHARE
-    enddo
 
 !$OMP PARALLEL DO PRIVATE(j,k)
     do k=nzs-2,nze+2

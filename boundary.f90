@@ -67,7 +67,7 @@ contains
     integer                :: j, k, ii, isp, ipos
     real(8)                :: xend, d_delx
 
-    xend = nxe*delx+u0/sqrt(1.+(u0/c)**2)*delt*min(itcheck2,itcheck3)
+    xend = (nxe-1)*delx+u0/sqrt(1.+(u0/c)**2)*delt*min(itcheck2,itcheck3)
     d_delx = 1.D0/delx
     
     do isp=1,nsp
@@ -716,19 +716,15 @@ contains
 !$OMP PARALLEL DO PRIVATE(j,k)
     do k=nzs-2,nze+2
     do j=nys-2,nye+2
-       df(1,nxs-1,j,k) = 0.d0
-       df(2,nxs-1,j,k) = 0.d0
-       df(3,nxs-1,j,k) = 0.d0
-       df(4,nxs-1,j,k) = 0.d0
-       df(5,nxs-1,j,k) = 0.d0
-       df(6,nxs-1,j,k) = 0.d0
+       df(1  ,nxs-1,j,k) = -df(1,  nxs,  j,k)
+       df(2:4,nxs-1,j,k) =  df(2:4,nxs+1,j,k)
+       df(5:6,nxs-1,j,k) = -df(5:6,nxs  ,j,k)
 
-       df(1,nxe  ,j,k) = 0.d0
-       df(2,nxe+1,j,k) = 0.d0
-       df(3,nxe+1,j,k) = 0.d0
-       df(4,nxe+1,j,k) = 0.d0
-       df(5,nxe  ,j,k) = 0.d0
-       df(6,nxe  ,j,k) = 0.d0
+       df(1  ,nxe  ,j,k) = 0.0
+       df(1  ,nxe+1,j,k) = 0.0
+       df(2:4,nxe+1,j,k) = 0.0
+       df(5:6,nxe  ,j,k) = 0.0
+       df(5:6,nxe+1,j,k) = 0.0
     enddo
     enddo
 !$OMP END PARALLEL DO
@@ -1143,8 +1139,8 @@ contains
 !$OMP PARALLEL DO PRIVATE(j,k)
     do k=nzs-1,nze+1
     do j=nys-1,nye+1
-       phi(nxs-1,j,k) = 0.d0
-       phi(nxe  ,j,k) = 0.d0
+       phi(nxs-1,j,k) = -phi(nxs,j,k)
+       phi(nxe  ,j,k) = 0.0D0
     enddo
     enddo
 !$OMP END PARALLEL DO
@@ -1154,8 +1150,8 @@ contains
 !$OMP PARALLEL DO PRIVATE(j,k)
     do k=nzs-1,nze+1
     do j=nys-1,nye+1
-       phi(nxs-1,j,k) = 0.d0
-       phi(nxe+1,j,k) = 0.d0
+       phi(nxs-1,j,k) = phi(nxs+1,j,k)
+       phi(nxe+1,j,k) = 0.0D0
     enddo
     enddo
 !$OMP END PARALLEL DO
