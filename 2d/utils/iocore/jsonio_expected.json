@@ -1,0 +1,97 @@
+{
+  "meta": {
+    "endian": 1,
+    "rawfile": "test.raw",
+    "info": "some information",
+    "large_int": 4294967296
+  },
+  "attribute": {
+    "nx": {
+      "datatype": "i4",
+      "offset": 0,
+      "size": 4,
+      "ndim": 1,
+      "shape": [
+        1
+      ],
+      "description": "# grid in x",
+      "data": 16
+    },
+    "ny": {
+      "datatype": "i4",
+      "offset": 4,
+      "size": 4,
+      "ndim": 1,
+      "shape": [
+        1
+      ],
+      "description": "# grid in y",
+      "data": 32
+    },
+    "ns": {
+      "datatype": "i4",
+      "offset": 8,
+      "size": 4,
+      "ndim": 1,
+      "shape": [
+        1
+      ],
+      "description": "# species",
+      "data": 2
+    },
+    "mass": {
+      "datatype": "f8",
+      "offset": 12,
+      "size": 16,
+      "ndim": 1,
+      "shape": [
+        2
+      ],
+      "description": "mass",
+      "data": [
+        0.1E+1,
+        0.1E+3
+      ]
+    },
+    "charge": {
+      "datatype": "f8",
+      "offset": 28,
+      "size": 16,
+      "ndim": 1,
+      "shape": [
+        2
+      ],
+      "description": "charge",
+      "data": [
+        -0.1E+1,
+        0.1E+1
+      ]
+    }
+  },
+  "dataset": {
+    "emf": {
+      "datatype": "f8",
+      "offset": 44,
+      "size": 24576,
+      "ndim": 3,
+      "shape": [
+        6,
+        32,
+        16
+      ],
+      "description": "electromagnetic fields"
+    },
+    "mom": {
+      "datatype": "f8",
+      "offset": 24620,
+      "size": 40960,
+      "ndim": 3,
+      "shape": [
+        10,
+        32,
+        16
+      ],
+      "description": "moments"
+    }
+  }
+}
