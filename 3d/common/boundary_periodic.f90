@@ -22,9 +22,9 @@ module boundary_periodic
 contains
 
 
-  subroutine boundary_periodic__init(ndim_in,np_in,nsp_in,nxgs_in,nxge_in,nygs_in,nyge_in,nzgs_in,nzge_in,nys_in,nye_in,nzs_in,nze_in, &
-                                     jup_in,jdown_in,kup_in,kdown_in,mnpi_in,mnpr_in,ncomw_in,nerr_in,nstat_in,                        &
-                                     delx_in,delt_in,c_in)
+  subroutine boundary_periodic__init(ndim_in,np_in,nsp_in,nxgs_in,nxge_in,nygs_in,nyge_in,nzgs_in, &
+       & nzge_in,nys_in,nye_in,nzs_in,nze_in,jup_in,jdown_in,kup_in,kdown_in,mnpi_in,mnpr_in, &
+       & ncomw_in,nerr_in,nstat_in,delx_in,delt_in,c_in)
 
     integer, intent(in) :: ndim_in, np_in, nsp_in
     integer, intent(in) :: nxgs_in, nxge_in, nygs_in, nyge_in, nzgs_in, nzge_in, nys_in, nye_in, nzs_in, nze_in
