@@ -31,4 +31,8 @@ endif
 
 # Wuming
 WM_INCLUDE    = $(BASEDIR)/include
+WM_INCLUDE2D  = $(BASEDIR)/2d/include
+WM_INCLUDE3D  = $(BASEDIR)/3d/include
 WM_LIB        = $(BASEDIR)/lib
+WM_LIB2D      = $(BASEDIR)/2d/lib
+WM_LIB3D      = $(BASEDIR)/3d/lib

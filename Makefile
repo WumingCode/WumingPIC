@@ -1,7 +1,7 @@
 # -*- Makefile -*-
-include ../common.mk
+include common.mk
 
-SUBDIRS = common
+SUBDIRS = utils
 
 default:
 	for dir in $(SUBDIRS); do \
@@ -9,6 +9,7 @@ default:
 	done
 
 clean :
+	rm -f $(OBJS) $(WM_INCLUDE)/*.mod $(WM_LIB)/*.a *.i *.mod *.out
 	# clean subdirectories
 	for dir in $(SUBDIRS); do \
 		$(MAKE) clean -C $$dir; \

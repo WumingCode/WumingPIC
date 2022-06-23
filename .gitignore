@@ -6,8 +6,15 @@
 *.pdf
 *.svg
 *.o
+*.i
 *.out
 *.mod
 *.a
+*.h5
+*.raw
+*.json
+!config_sample.json
 core*
 *~
+.DS_Store
+compiler.mk

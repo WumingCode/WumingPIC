@@ -7,5 +7,5 @@
 AR      = ar
 CC      = mpiicc -qopenmp
 FC      = mpiifort -qopenmp
-FCFLAGS = -fpp -I$(BASEDIR)/include
-LDFLAGS = -L$(BASEDIR)/lib
+FCFLAGS = -fpp -I$(WM_INCLUDE)
+LDFLAGS = -L$(WM_LIB)

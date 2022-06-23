@@ -1,5 +1,6 @@
 # -*- Makefile -*-
-include ../../common.mk
+include ../../../common.mk
+include ../../common2d.mk
 
 SRCS   = main.f90 app.f90 boundary_shock.f90
 OBJS   = $(SRCS:%.f90=%.o)

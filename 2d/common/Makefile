@@ -1,5 +1,6 @@
 # -*- Makefile -*-
-include ../common.mk
+include ../../common.mk
+include ../common2d.mk
 
 SRCS   = \
 	wuming2d.f90 boundary_periodic.f90 field.f90 particle.f90 mom_calc.f90 \
@@ -8,8 +9,8 @@ OBJS   = $(SRCS:%.f90=%.o)
 MODS   = $(SRCS:%.f90=%.mod)
 
 default: $(OBJS)
-	$(AR) r $(WM_LIB)/libwuming2d_common.a $(OBJS)
-	cp $(MODS) $(WM_INCLUDE)
+	$(AR) r $(WM_LIB2D)/libwuming2d_common.a $(OBJS)
+	cp $(MODS) $(WM_INCLUDE2D)
 
 clean :
 	rm -f $(TARGET) $(OBJS) *.i *.mod *.out
