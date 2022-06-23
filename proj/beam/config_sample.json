@@ -1,0 +1,26 @@
+{
+  "config": {
+    "verbose": 1,
+    "datadir": "./",
+    "max_elapsed": 41400,
+    "max_it": 12500,
+    "intvl_ptcl": 12501,
+    "intvl_mom": 1000,
+    "intvl_orb": 12501
+  },
+  "parameter": {
+    "num_process": 576,
+    "num_process_j": 24,
+    "n_ppc": 8,
+    "n_x": 1000,
+    "n_y": 288,
+    "n_z": 288,
+    "mass_ratio": 0.25E+2,
+    "sigma_e": 0.25E-4,
+    "omega_pe": 0.1E+0,
+    "v_the": 0.1E+0,
+    "v_thi": 0.125E-2,
+    "n_r": 0.2E+0,
+    "v_sh": 0.25E+0
+  }
+}
