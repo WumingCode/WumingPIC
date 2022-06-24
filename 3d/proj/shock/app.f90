@@ -38,6 +38,7 @@ module app
 
   ! read from "parameter" section
   integer :: num_process
+  integer :: num_process_j
   integer :: n_ppc
   integer :: n_x
   integer :: n_x_ini
@@ -53,7 +54,7 @@ module app
   real(8) :: phi_bn
   real(8) :: l_damp_ini
 
-  integer :: nproc, nproc_j
+  integer :: nproc, nproc_j, nproc_k
   integer :: it0
   integer :: np
   integer :: n0
@@ -158,7 +159,7 @@ contains
         stop
       endif
 
-      if( verbose >= 1 .and. nrank == nroot ) then
+      if( verbose >= 1 .and. nrank == 0 ) then
         write(*,'("*** Time step: ", i7, " completed in ", e10.2, " sec.")') it, etime
       endif
     enddo
@@ -248,6 +249,7 @@ contains
     ! read "parameter" section and initialize
     call json%get(root, 'parameter', p)
     call json%get(p, 'num_process', num_process)
+    call json%get(p, 'num_process_j', num_process_j)
     call json%get(p, 'n_ppc', n_ppc)
     call json%get(p, 'n_x', n_x)
     call json%get(p, 'n_y', n_y)
@@ -263,19 +265,21 @@ contains
     call json%get(p, 'phi_bn', phi_bn)
     call json%get(p, 'l_damp_ini', l_damp_ini)
 
-    nproc = num_process
-    nx    = n_x
-    ny    = n_y
-    np    = n_ppc*nx*5
-    n0    = n_ppc
-    nxgs  = 2
-    nxge  = nxgs+nx-1
-    nygs  = 2
-    nyge  = nygs+ny-1
-    nzgs  = 2
-    nzge  = nzgs+nz-1
-    nxs   = nxgs
-    nxe   = nxgs+n_x_ini
+    nproc   = num_process
+    nproc_j = num_process_j
+    nx      = n_x
+    ny      = n_y
+    nz      = n_z
+    np      = n_ppc*nx*5
+    n0      = n_ppc
+    nxgs    = 2
+    nxge    = nxgs+nx-1
+    nygs    = 2
+    nyge    = nygs+ny-1
+    nzgs    = 2
+    nzge    = nzgs+nz-1
+    nxs     = nxgs
+    nxe     = nxgs+n_x_ini
 
     ! degree to radian
     theta_bn = theta_bn*pi/1.8d2
@@ -296,7 +300,7 @@ contains
     real(8) :: wpe, wpi, wge, wgi, vte, vti
 
     ! MPI
-    call mpi_set__init(nygs, nyge, nproc)
+    call mpi_set__init(nygs, nyge, nzgs, nzge, nproc, nproc_j, nproc_k)
 
     ! random number
     call init_random_seed()
@@ -335,7 +339,7 @@ contains
     b0   = r(1)*c/q(1)*wgi*gam0
 
     ! number of particles
-    np2(nys:nye,1:nsp) = n0*(nxe-nxs-1)
+    np2(nys:nye,nzs:nze,1:nsp) = n0*(nxe-nxs-1)
     if ( nrank == 0 ) then
       if ( n0*(nxge-nxgs) > np ) then
         write(0,*) 'Error: Too large number of particles'
@@ -352,7 +356,7 @@ contains
         do i = nxs+2, nxe
           cumcnt(i,j,k,isp) = cumcnt(i-1,j,k,isp) + n0
         enddo
-        if ( cumcnt(nxe,j,isp) /= np2(j,isp) ) then
+        if ( cumcnt(nxe,j,k,isp) /= np2(j,k,isp) ) then
           write(0,*) 'Error: invalid values encounterd for cumcnt'
           stop
         endif
@@ -414,7 +418,7 @@ contains
   !
   subroutine set_initial_condition()
     implicit none
-    integer :: i, j, ii, isp
+    integer :: i, j, k, ii, isp
     real(8) :: v1, gam1, gamp, sd(nsp)
 
     !
@@ -440,15 +444,17 @@ contains
     !
     isp = 1
 !$OMP PARALLEL DO PRIVATE(ii,j,k)
+    do k=nzs,nze
     do j=nys,nye
-       do ii=1,np2(j,isp)
-          up(1,ii,j,k,1) = (nxs+(nxe-nxs)*(ii-5d-1)/np2(j,isp))*delx
-          up(2,ii,j,k,1) = (j+uniform_rand())*delx
-          up(3,ii,j,k,1) = (k+uniform_rand())*delx
-          up(1,ii,j,k,2) = up(1,ii,j,k,1)
-          up(2,ii,j,k,2) = up(2,ii,j,k,1)
-          up(3,ii,j,k,2) = up(3,ii,j,k,1)
-       enddo
+      do ii=1,np2(j,k,isp)
+        up(1,ii,j,k,1) = (nxs+(nxe-nxs)*(ii-5d-1)/np2(j,k,isp))*delx
+        up(2,ii,j,k,1) = (j+uniform_rand())*delx
+        up(3,ii,j,k,1) = (k+uniform_rand())*delx
+        up(1,ii,j,k,2) = up(1,ii,j,k,1)
+        up(2,ii,j,k,2) = up(2,ii,j,k,1)
+        up(3,ii,j,k,2) = up(3,ii,j,k,1)
+      enddo
+    enddo
     enddo
 !$OMP END PARALLEL DO
 
@@ -459,13 +465,13 @@ contains
     sd(2) = v_the
     do isp=1,nsp
 !$OMP PARALLEL DO PRIVATE(ii,j,k,v1,gam1,gamp)
-      do k=nze,nze
+      do k=nzs,nze
       do j=nys,nye
-        do ii=1,np2(j,isp)
+        do ii=1,np2(j,k,isp)
           ! Maxwellian in fluid rest frame
-          up(4,ii,j,isp) = sd(isp)*normal_rand()
-          up(5,ii,j,isp) = sd(isp)*normal_rand()
-          up(6,ii,j,isp) = sd(isp)*normal_rand()
+          up(4,ii,j,k,isp) = sd(isp)*normal_rand()
+          up(5,ii,j,k,isp) = sd(isp)*normal_rand()
+          up(6,ii,j,k,isp) = sd(isp)*normal_rand()
 
           ! Lorentz transform to lab frame
           v1   = vprofile(up(1,ii,j,k,isp))
@@ -511,7 +517,7 @@ contains
       enddo
 
       do j=nys,nye-1
-        lcumsum(j+1,nze) = lcumsum(j,nze)+np2(j,nze,isp)
+        lcumsum(j+1,nze,isp) = lcumsum(j,nze,isp)+np2(j,nze,isp)
       enddo
     enddo
 
@@ -573,7 +579,7 @@ contains
     ! write data to the disk
     call io__output(up, uf, np2, nxs, nxe, it, trim(restart_file))
 
-    if ( nrank == nroot ) then
+    if ( nrank == 0 ) then
        call json%print(root, config)
     end if
 
@@ -635,7 +641,7 @@ contains
 
   subroutine relocate()
     implicit none
-    integer :: isp, j, ii, ii1 ,ii2
+    integer :: isp, j, k, ii, ii1 ,ii2
     real(8) :: v1, gam1, gamp, sd(nsp)
 
     integer(8) :: gcumsum(nproc+1,nsp), nptotal(nsp), pid
@@ -656,15 +662,15 @@ contains
     do k=nzs,nze
     do j=nys,nye
       do ii=1,n0
-        ii1 = np2(j,1) + ii
-        ii2 = np2(j,2) + ii
+        ii1 = np2(j,k,1) + ii
+        ii2 = np2(j,k,2) + ii
 
         up(1,ii1,j,k,1) = (nxe-1)*delx+(ii-5d-1)/n0*delx
         up(2,ii1,j,k,1) = (j+uniform_rand())*delx
-        up(3,iii,j,k,1) = (k+uniform_rand())*delx
+        up(3,ii1,j,k,1) = (k+uniform_rand())*delx
         up(1,ii2,j,k,2) = up(1,ii1,j,k,1)
         up(2,ii2,j,k,2) = up(2,ii1,j,k,1)
-        up(3,ii2,j,k,2) = up(3,iii,j,k,1)
+        up(3,ii2,j,k,2) = up(3,ii1,j,k,1)
       enddo
     enddo
     enddo
@@ -679,26 +685,26 @@ contains
 !$OMP PARALLEL DO PRIVATE(ii,j,k,v1,gam1,gamp,pid)
       do k=nzs,nze
       do j=nys,nye
-        do ii=np2(j,isp)+1,np2(j,isp)+n0
+        do ii=np2(j,k,isp)+1,np2(j,k,isp)+n0
           ! Maxwellian in fluid rest frame
-          up(4,ii,j,isp) = sd(isp)*normal_rand()
-          up(5,ii,j,isp) = sd(isp)*normal_rand()
-          up(6,ii,j,isp) = sd(isp)*normal_rand()
+          up(4,ii,j,k,isp) = sd(isp)*normal_rand()
+          up(5,ii,j,k,isp) = sd(isp)*normal_rand()
+          up(6,ii,j,k,isp) = sd(isp)*normal_rand()
 
           ! Lorentz transform to lab frame
-          v1   = vprofile(up(1,ii,j,isp))
+          v1   = vprofile(up(1,ii,j,k,isp))
           gam1 = 1d0/sqrt(1d0-(v1/c)**2)
-          gamp = sqrt(1d0+(up(4,ii,j,isp)**2 &
-                          +up(5,ii,j,isp)**2 &
-                          +up(6,ii,j,isp)**2)/c**2)
-          up(4,ii,j,isp) = gam1*(up(4,ii,j,isp)+v1*gamp)
+          gamp = sqrt(1d0+(up(4,ii,j,k,isp)**2 &
+                          +up(5,ii,j,k,isp)**2 &
+                          +up(6,ii,j,k,isp)**2)/c**2)
+          up(4,ii,j,k,isp) = gam1*(up(4,ii,j,k,isp)+v1*gamp)
 
           ! particle ID
-          pid = ii - np2(j,isp) + (j-nygs)*n0+nptotal(isp)
-          up(7,ii,j,isp) = transfer(-pid, 1.0_8)
+          pid = ii-np2(j,k,isp)+((nyge-nygs+1)*(k-nzgs)+(j-nygs))*n0+nptotal(isp)
+          up(7,ii,j,k,isp) = transfer(-pid, 1.0_8)
         enddo
-        np2(j,isp)        = np2(j,isp)         +n0
-        cumcnt(nxe,j,isp) = cumcnt(nxe-1,j,isp)+n0
+        np2(j,k,isp)        = np2(j,k,isp)         +n0
+        cumcnt(nxe,j,k,isp) = cumcnt(nxe-1,j,k,isp)+n0
       enddo
       enddo
 !$OMP END PARALLEL DO
@@ -709,8 +715,8 @@ contains
     do j=nys-2,nye+2
       uf(2,nxe-1,j,k) = b0*sin(theta_bn)*cos(phi_bn)
       uf(3,nxe-1,j,k) = b0*sin(theta_bn)*sin(phi_bn)
-      uf(5,nxe-1,j,k) =+v0*uf(3,nxe-1,j)/c
-      uf(6,nxe-1,j,k) =-v0*uf(2,nxe-1,j)/c
+      uf(5,nxe-1,j,k) =+v0*uf(3,nxe-1,j,k)/c
+      uf(6,nxe-1,j,k) =-v0*uf(2,nxe-1,j,k)/c
       uf(2,nxe,j,k)   = b0*sin(theta_bn)*cos(phi_bn)
       uf(3,nxe,j,k)   = b0*sin(theta_bn)*sin(phi_bn)
     enddo
@@ -730,7 +736,7 @@ contains
     real(8) :: pflux, x0, xinj
     integer :: nginj, ngmod, nginj_proc(nproc), index_proc(nproc)
     integer :: nlinj, nlmod, nlinj_grid(nys:nye,nzs:nze), index_grid((nye-nys+1)*(nze-nzs+1)), ig2(2)
-    integer :: ncinj_proc(nproc+1), ncinj_grid(nys:nye+1)
+    integer :: ncinj_proc(nproc+1), ncinj_grid(nys:nye,nzs:nze)
     integer(8) :: gcumsum(nproc+1,nsp), nptotal(nsp), pid
 
     !
@@ -815,11 +821,11 @@ contains
 !$OMP PARALLEL DO PRIVATE(ii,ii1,ii2,j,k)
     do k=nzs,nze
     do j=nys,nye
-      do ii = 1, nlinj_grid(j)
+      do ii = 1, nlinj_grid(j,k)
         ii1 = np2(j,k,1)+ii
         ii2 = np2(j,k,2)+ii
 
-        up(1,ii1,j,k,1) = nxe*delx+(ii-5d-1)/nlinj_grid(j)*x0
+        up(1,ii1,j,k,1) = nxe*delx+(ii-5d-1)/nlinj_grid(j,k)*x0
         up(2,ii1,j,k,1) = (j+uniform_rand())*delx
         up(3,ii1,j,k,1) = (k+uniform_rand())*delx
         up(1,ii2,j,k,2) = up(1,ii1,j,k,1)
@@ -839,15 +845,15 @@ contains
 !$OMP PARALLEL DO PRIVATE(ii,j,k,xinj,v1,gam1,gamp,pid)
       do k=nzs,nze
       do j=nys,nye
-        do ii = np2(j,isp)+1, np2(j,isp)+nlinj_grid(j)
+        do ii = np2(j,k,isp)+1, np2(j,k,isp)+nlinj_grid(j,k)
           ! Maxwellian in fluid rest frame
-          up(4,ii,j,isp) = sd(isp)*normal_rand()
-          up(5,ii,j,isp) = sd(isp)*normal_rand()
-          up(6,ii,j,isp) = sd(isp)*normal_rand()
+          up(4,ii,j,k,isp) = sd(isp)*normal_rand()
+          up(5,ii,j,k,isp) = sd(isp)*normal_rand()
+          up(6,ii,j,k,isp) = sd(isp)*normal_rand()
 
           ! injection (non-relativistic approximation)
           xinj = up(1,ii,j,k,isp)+(v0+up(4,ii,j,k,isp))*delt
-          up(1,ii,j,isp) = xinj
+          up(1,ii,j,k,isp) = xinj
 !         if( xinj <= nxe*delx ) then
 !         ! leave ux as is
 !           up(1,ii,j,k,isp) = xinj

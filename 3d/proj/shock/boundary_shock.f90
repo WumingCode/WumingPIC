@@ -14,7 +14,7 @@ module boundary_shock
   public :: boundary_shock__mom
 
   logical, save :: is_init = .false.
-  integer, save :: ndim, np, nsp, nxgs, nxge, nyge, nzgs, nzge, nys, nye, nze, nze
+  integer, save :: ndim, np, nsp, nxgs, nxge, nygs, nyge, nzgs, nzge, nys, nye, nzs, nze
   integer, save :: jup, jdown, kup, kdown, mnpi, mnpr, ncomw
   integer       :: nerr
   integer, allocatable :: nstat(:)
@@ -23,8 +23,8 @@ module boundary_shock
 
 contains
 
-  subroutine boundary_shock__init(ndim_in,np_in,nsp_in,nxgs_in,nxge_in,nygs_in,nyge_in,nzgs_in,nzge_in,nzs_in,nze_in, &
-                                  jup_in,jdown_in,kup_in,kdown_in,mnpi_in,mnpr_in,ncomw_in,nerr_in,nstat_in,          &
+  subroutine boundary_shock__init(ndim_in,np_in,nsp_in,nxgs_in,nxge_in,nygs_in,nyge_in,nzgs_in,nzge_in,nys_in,nye_in,nzs_in,nze_in, &
+                                  jup_in,jdown_in,kup_in,kdown_in,mnpi_in,mnpr_in,ncomw_in,nerr_in,nstat_in,                        &
                                   delx_in,delt_in,c_in)
 
     integer, intent(in) :: ndim_in, np_in, nsp_in
@@ -728,7 +728,7 @@ contains
   end subroutine boundary_shock__dfield
 
 
-  subroutine boundary_shock__curre(uj,nxs,nxe,nys,nye,nzs,nze,nsgs,nxge)
+  subroutine boundary_shock__curre(uj,nxs,nxe,nys,nye,nzs,nze,nxgs,nxge)
 
     integer, intent(in)    :: nxs, nxe, nys, nye, nzs, nze, nxgs, nxge
     real(8), intent(inout) :: uj(3,nxs-2:nxe+2,nys-2:nye+2,nzs-2:nze+2)
@@ -1015,7 +1015,7 @@ contains
   end subroutine boundary_shock__curre
 
 
-  subroutine boundary__phi(phi,nxs,nxe,nys,nye,nzs,nze,l)
+  subroutine boundary_shock__phi(phi,nxs,nxe,nys,nye,nzs,nze,l)
 
     integer, intent(in)    :: nxs, nxe, nys, nye, nzs, nze, l
     real(8), intent(inout) :: phi(nxs-1:nxe+1,nys-1:nye+1,nzs-1:nze+1)
@@ -1147,7 +1147,7 @@ contains
 
     end select
 
-  end subroutine boundary__phi
+  end subroutine boundary_shock__phi
 
 
   subroutine boundary_shock__mom(mom)
