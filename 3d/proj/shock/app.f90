@@ -1,7 +1,7 @@
 module app
   use iso_fortran_env, only: int64
   use mpi
-  use wuming2d
+  use wumingd
   use wuming_utils
   use boundary_shock, bc__init        => boundary_shock__init,        &
                       bc__dfield      => boundary_shock__dfield,      &
