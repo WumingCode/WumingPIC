@@ -1,4 +1,4 @@
-module wuming2d
+module wuming3d
   use json_module
   use jsonio
   use mpiio
@@ -19,4 +19,4 @@ module wuming2d
 
   implicit none
 
-end module wuming2d
+end module wuming3d

@@ -8,7 +8,8 @@ default:
 		$(MAKE) -C $$dir; \
 	done
 
-clean :
+clean:
+	rm -f $(WM_LIB2D)/*.a $(WM_INCLUDE2D)/*.mod
 	# clean subdirectories
 	for dir in $(SUBDIRS); do \
 		$(MAKE) clean -C $$dir; \

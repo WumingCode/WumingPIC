@@ -1,8 +1,5 @@
 # -*- Makefile -*-
 
-# HDF5
-#HDF5DIR = $(shell spack location -i hdf5 %fj /7cxah5)
-
 # compilers and arguments
 AR      = ar
 CC      = mpifccpx -Kfast,openmp

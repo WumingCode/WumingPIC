@@ -1,15 +1,22 @@
 # -*- Makefile -*-
 include common.mk
 
-SUBDIRS = utils
+SUBDIRS = utils 2d 3d
+LIBS    = $(WM_LIB)/libwuming_utils.a
 
-default:
-	for dir in $(SUBDIRS); do \
-		$(MAKE) -C $$dir; \
-	done
+default: $(LIBS)
 
-clean :
-	rm -f $(OBJS) $(WM_INCLUDE)/*.mod $(WM_LIB)/*.a *.i *.mod *.out
+$(LIBS):
+	$(MAKE) -C utils
+
+2d: $(LIBS)
+	$(MAKE) -C 2d
+
+3d: $(LIBS)
+	$(MAKE) -C 3d
+
+clean:
+	rm -f $(WM_LIB)/*.a $(WM_INCLUDE)/*.mod
 	# clean subdirectories
 	for dir in $(SUBDIRS); do \
 		$(MAKE) clean -C $$dir; \

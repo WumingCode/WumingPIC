@@ -7,6 +7,7 @@ module wuming_utils
   public :: init_random_seed
   public :: uniform_rand
   public :: normal_rand
+  public :: beam_rand
   public :: shuffle
 
   real(8), parameter :: pi = 4*atan(1.0d0)
@@ -87,6 +88,22 @@ contains
     end if
 
   end function normal_rand
+
+  !
+  ! for beam distribution
+  !
+  function beam_rand(nr) result(y)
+    implicit none
+    real(8), intent(in) :: nr
+    real(8) :: y
+
+    if (uniform_rand() < nr) then
+      y = 1d0-nr
+    else
+      y = -nr
+    endif
+
+  end function beam_rand
 
   !
   ! quick sort

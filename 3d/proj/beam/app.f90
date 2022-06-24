@@ -1,7 +1,7 @@
 module app
   use iso_fortran_env, only: int64
   use mpi
-  use wuming2d
+  use wuming3d
   use wuming_utils
   use boundary_periodic, bc__init         => boundary_periodic__init,        &
                          bc__dfield       => boundary_periodic__dfield,      &
