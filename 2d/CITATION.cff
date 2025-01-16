@@ -1,0 +1,42 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Wuming PIC2D
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Yosuke
+    family-names: Matsumoto
+    email: ymatumot@chiba-u.jp
+    affiliation: Chiba University
+    orcid: 'https://orcid.org/0000-0002-1484-7056'
+  - given-names: Takanobu
+    family-names: Amano
+    affiliation: The Univeristy of Tokyo
+    orcid: 'https://orcid.org/0000-0002-2140-6961'
+  - given-names: Masanori
+    family-names: Iwamoto
+    affiliation: Kyoto University
+    orcid: 'https://orcid.org/0000-0003-2255-5229'
+  - given-names: Taiki
+    family-names: Jikei
+    affiliation: The University of Tokyo
+  - given-names: Seiji
+    family-names: Zenitani
+    affiliation: 'Space Research Institute (IWF) '
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.10990575
+    description: >-
+      This DOI represents all versions, and will always
+      resolve to the latest one.
+repository-code: 'https://github.com/WumingCode/WumingPIC2D'
+url: 'https://github.com/WumingCode/WumingPIC2D'
+abstract: >-
+  Two-dimentional, special relativistic, electromagnetic
+  particle-in-cell simulation code for general purposes in
+  space and astrophysical plasmas.
+license: MIT
