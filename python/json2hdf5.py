@@ -87,7 +87,7 @@ def read_data(fp, obj, byteorder):
     offset   = obj['offset']
     datatype = byteorder + obj['datatype']
     shape    = obj['shape']
-    size     = np.product(shape)
+    size     = np.prod(shape)
     fp.seek(offset)
     x = np.fromfile(fp, datatype, size).reshape(shape)
     if len(shape) == 1 and shape[0] == 1:
@@ -99,7 +99,7 @@ def read_info(obj, byteorder):
     offset   = obj['offset']
     datatype = byteorder + obj['datatype']
     shape    = obj['shape']
-    datasize = np.product(shape) * np.dtype(datatype).itemsize
+    datasize = np.prod(shape) * np.dtype(datatype).itemsize
     return offset, datasize, datatype, shape
 
 
