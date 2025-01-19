@@ -670,29 +670,18 @@ contains
     enddo
 !$OMP END PARALLEL DO
 
-!!$OMP PARALLEL DO PRIVATE(j, k)
-!    do k=nzs-2,nze+2
-!    do j=nys-2,nye+2
-!       df(1,  nxs-1,j) = -df(1,  nxs,  j)
-!       df(2:4,nxs-1,j) =  df(2:4,nxs+1,j)
-!       df(5:6,nxs-1,j) = -df(5:6,nxs,  j)
-!       df(1,  nxe  ,j) = -df(1,  nxe-1,j)
-!       df(2:4,nxe+1,j) =  df(2:4,nxe-1,j)
-!       df(5:6,nxe  ,j) = -df(5:6,nxe-1,j)
-!    enddo
-!    enddo
-!!$OMP END PARALLEL DO
-
-!$OMP WORKSHARE
-    df(1  ,nxs-1,nys-2:nye+2,nzs-2:nze+2) = -df(1,  nxs,  nys-2:nye+2,nzs-2:nze+2)
-    df(2:4,nxs-1,nys-2:nye+2,nzs-2:nze+2) =  df(2:4,nxs+1,nys-2:nye+2,nzs-2:nze+2)
-    df(5:6,nxs-1,nys-2:nye+2,nzs-2:nze+2) = -df(5:6,nxs,  nys-2:nye+2,nzs-2:nze+2)
-    df(1  ,nxe+1,nys-2:nye+2,nzs-2:nze+2) = -df(1  ,nxe-1,nys-2:nye+2,nzs-2:nze+2)
-    df(2:4,nxe+1,nys-2:nye+2,nzs-2:nze+2) =  df(2:4,nxe-1,nys-2:nye+2,nzs-2:nze+2)
-    df(5:6,nxe+1,nys-2:nye+2,nzs-2:nze+2) = -df(5:6,nxe-1,nys-2:nye+2,nzs-2:nze+2)
-!$OMP END WORKSHARE
-
-
+!$OMP PARALLEL DO PRIVATE(j,k)
+    do k=nzs-2,nze+2
+    do j=nys-2,nye+2
+       df(1,  nxs-1,j,k) = -df(1,  nxs,  j,k)
+       df(2:4,nxs-1,j,k) =  df(2:4,nxs+1,j,k)
+       df(5:6,nxs-1,j,k) = -df(5:6,nxs,  j,k)
+       df(1,  nxe  ,j,k) = -df(1,  nxe-1,j,k)
+       df(2:4,nxe+1,j,k) =  df(2:4,nxe-1,j,k)
+       df(5:6,nxe  ,j,k) = -df(5:6,nxe-1,j,k)
+    enddo
+    enddo
+!$OMP END PARALLEL DO
 
   end subroutine boundary_reconnection__dfield
 
@@ -1105,7 +1094,7 @@ contains
 
     case(1)
 
-!$OMP PARALLEL DO PRIVATE(j, k)
+!$OMP PARALLEL DO PRIVATE(j,k)
     do k=nzs-1,nze+1
     do j=nys-1,nye+1
        phi(nxs-1,j,k) = -phi(nxs,j,k)
@@ -1116,7 +1105,7 @@ contains
 
     case(2,3)
 
-!$OMP PARALLEL DO PRIVATE(j, k)
+!$OMP PARALLEL DO PRIVATE(j,k)
     do k=nzs-1,nze+1
     do j=nys-1,nye+1
        phi(nxs-1,j,k) = phi(nxs+1,j,k)
