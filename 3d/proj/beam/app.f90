@@ -273,14 +273,14 @@ contains
     allocate(gp(1:ndim,1:np,nys:nye,nzs:nze,1:nsp))
     allocate(mom(1:7,nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:nsp))
 
-!$OMP WORKSHARE
+!$OMP PARALLEL WORKSHARE
     np2(nys:nye,nzs:nze,1:nsp) = 0
     cumcnt(nxgs:nxge+1,nys:nye,nzs:nze,1:nsp) = 0
     uf(1:6,nxgs-2:nxge+2,nys-2:nye+2,nzs-2:nze+2) = 0d0
     up(1:ndim,1:np,nys:nye,nzs:nze,1:nsp) = 0d0
     gp(1:ndim,1:np,nys:nye,nzs:nze,1:nsp) = 0d0
     mom(1:7,nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:nsp) = 0d0
-!$OMP END WORKSHARE
+!$OMP END PARALLEL WORKSHARE
 
     delt = cfl*delx/c
     wpe  = omega_pe
