@@ -141,12 +141,12 @@ end subroutine boundary_periodic__init
 
 !$OMP PARALLEL
 
-!$OMP WORKSHARE
+!$OMP PARALLEL WORKSHARE
       cnt(nys-1:nye+1,nzs-1:nze+1) = 0
-!$OMP END WORKSHARE
-!$OMP WORKSHARE
+!$OMP END PARALLEL WORKSHARE
+!$OMP PARALLEL WORKSHARE
       cnt2(nys:nye,nzs:nze) = 0
-!$OMP END WORKSHARE
+!$OMP END PARALLEL WORKSHARE
 
 !$OMP DO PRIVATE(ii,j,k,jpos,kpos,idim)
       do k=nzs,nze
@@ -662,10 +662,12 @@ end subroutine boundary_periodic__init
     enddo
 !$OMP END PARALLEL DO
 
-!$OMP WORKSHARE
+!$OMP PARALLEL WORKSHARE
+    df(1:6,nxs-2,nys-2:nye+2,nzs-2:nze+2) = df(1:6,nxe-1,nys-2:nye+2,nzs-2:nze+2)
     df(1:6,nxs-1,nys-2:nye+2,nzs-2:nze+2) = df(1:6,nxe,nys-2:nye+2,nzs-2:nze+2)
     df(1:6,nxe+1,nys-2:nye+2,nzs-2:nze+2) = df(1:6,nxs,nys-2:nye+2,nzs-2:nze+2)
-!$OMP END WORKSHARE
+    df(1:6,nxe+2,nys-2:nye+2,nzs-2:nze+2) = df(1:6,nxs+1,nys-2:nye+2,nzs-2:nze+2)
+!$OMP END PARALLEL WORKSHARE
 
 
   end subroutine boundary_periodic__dfield
@@ -960,18 +962,18 @@ end subroutine boundary_periodic__init
     enddo
 !$OMP END PARALLEL DO
 
-!$OMP WORKSHARE
+!$OMP PARALLEL WORKSHARE
     uj(1:3,nxe-1,nys-2:nye+2,nzs-2:nze+2) = uj(1:3,nxe-1,nys-2:nye+2,nzs-2:nze+2)+uj(1:3,nxs-2,nys-2:nye+2,nzs-2:nze+2)
     uj(1:3,nxe  ,nys-2:nye+2,nzs-2:nze+2) = uj(1:3,nxe  ,nys-2:nye+2,nzs-2:nze+2)+uj(1:3,nxs-1,nys-2:nye+2,nzs-2:nze+2)
     uj(1:3,nxs  ,nys-2:nye+2,nzs-2:nze+2) = uj(1:3,nxs  ,nys-2:nye+2,nzs-2:nze+2)+uj(1:3,nxe+1,nys-2:nye+2,nzs-2:nze+2)
     uj(1:3,nxs+1,nys-2:nye+2,nzs-2:nze+2) = uj(1:3,nxs+1,nys-2:nye+2,nzs-2:nze+2)+uj(1:3,nxe+2,nys-2:nye+2,nzs-2:nze+2)
-!$OMP END WORKSHARE
-!$OMP WORKSHARE
+!$OMP END PARALLEL WORKSHARE
+!$OMP PARALLEL WORKSHARE
     uj(1:3,nxs-2,nys-2:nye+2,nzs-2:nze+2) = uj(1:3,nxe-1,nys-2:nye+2,nzs-2:nze+2)
     uj(1:3,nxs-1,nys-2:nye+2,nzs-2:nze+2) = uj(1:3,nxe  ,nys-2:nye+2,nzs-2:nze+2)
     uj(1:3,nxe+1,nys-2:nye+2,nzs-2:nze+2) = uj(1:3,nxs  ,nys-2:nye+2,nzs-2:nze+2)
     uj(1:3,nxe+2,nys-2:nye+2,nzs-2:nze+2) = uj(1:3,nxs+1,nys-2:nye+2,nzs-2:nze+2)
-!$OMP END WORKSHARE
+!$OMP END PARALLEL WORKSHARE
 
   end subroutine boundary_periodic__curre
 
@@ -1088,10 +1090,10 @@ end subroutine boundary_periodic__init
     enddo
 !$OMP END PARALLEL DO
 
-!$OMP WORKSHARE
+!$OMP PARALLEL WORKSHARE
     phi(nxs-1,nys-1:nye+1,nzs-1:nze+1) = phi(nxe,nys-1:nye+1,nzs-1:nze+1)
     phi(nxe+1,nys-1:nye+1,nzs-1:nze+1) = phi(nxs,nys-1:nye+1,nzs-1:nze+1)
-!$OMP END WORKSHARE
+!$OMP END PARALLEL WORKSHARE
 
 
   end subroutine boundary_periodic__phi
