@@ -149,12 +149,12 @@ contains
 
 !$OMP PARALLEL
 
-!$OMP PARALLEL WORKSHARE
+!$OMP WORKSHARE
       cnt(nys-1:nye+1,nzs-1:nze+1) = 0
-!$OMP END PARALLEL WORKSHARE
-!$OMP PARALLEL WORKSHARE
+!$OMP END WORKSHARE
+!$OMP WORKSHARE
       cnt2(nys:nye,nzs:nze) = 0
-!$OMP END PARALLEL WORKSHARE
+!$OMP END WORKSHARE
 
 !$OMP DO PRIVATE(ii,j,k,jpos,kpos,idim)
       do k=nzs,nze

@@ -6,7 +6,6 @@ module boundary_shock
 
   public :: boundary_shock__init
   public :: boundary_shock__dfield
-  public :: boundary_shock__particle_x
   public :: boundary_shock__particle_yz
   public :: boundary_shock__injection
   public :: boundary_shock__curre
@@ -23,8 +22,9 @@ module boundary_shock
 
 contains
 
-  subroutine boundary_shock__init(ndim_in,np_in,nsp_in,nxgs_in,nxge_in,nygs_in,nyge_in,nzgs_in,nzge_in,nys_in,nye_in,nzs_in,nze_in, &
-                                  jup_in,jdown_in,kup_in,kdown_in,mnpi_in,mnpr_in,ncomw_in,nerr_in,nstat_in,                        &
+  subroutine boundary_shock__init(ndim_in,np_in,nsp_in,nxgs_in,nxge_in,nygs_in,nyge_in,nzgs_in,nzge_in,&
+                                  nys_in,nye_in,nzs_in,nze_in, &
+                                  jup_in,jdown_in,kup_in,kdown_in,mnpi_in,mnpr_in,ncomw_in,nerr_in,nstat_in, &
                                   delx_in,delt_in,c_in)
 
     integer, intent(in) :: ndim_in, np_in, nsp_in
@@ -49,6 +49,8 @@ contains
     jdown = jdown_in
     kup   = kup_in
     kdown = kdown_in
+    mnpi  = mnpi_in
+    mnpr  = mnpr_in
     ncomw = ncomw_in
     nerr  = nerr_in
     allocate(nstat(size(nstat_in)))
@@ -64,49 +66,6 @@ contains
 
   end subroutine boundary_shock__init
 
-
-  subroutine boundary_shock__particle_x(up,np2,nxs,nxe)
-
-    integer, intent(in)    :: nxs, nxe
-    integer, intent(in)    :: np2(nys:nye,nzs:nze,nsp)
-    real(8), intent(inout) :: up(ndim,np,nys:nye,nzs:nze,nsp)
-    integer                :: j, k, ii, isp, ipos
-
-    if(.not.is_init)then
-      write(6,*)'Initialize first by calling boundary_shock__init()'
-      stop
-    endif
-
-
-    do isp=1,nsp
-
-!$OMP PARALLEL DO PRIVATE(ii,j,k,ipos)
-      do k=nzs,nze
-      do j=nys,nye
-        do ii=1,np2(j,k,isp)
-
-          ipos = int(up(1,ii,j,k,isp)*d_delx)
-
-          if(ipos < nxs+1)then
-            up(1,ii,j,k,isp) = 2d0*(nxs+1)*delx-up(1,ii,j,k,isp)
-            up(4,ii,j,k,isp) = -up(4,ii,j,k,isp)
-            up(5,ii,j,k,isp) = -up(5,ii,j,k,isp)
-            up(6,ii,j,k,isp) = -up(6,ii,j,k,isp)
-          else if(ipos >= nxe-1)then
-            up(1,ii,j,k,isp) = 2d0*(nxe-1)*delx-up(1,ii,j,k,isp)
-            up(4,ii,j,k,isp) = -up(4,ii,j,k,isp)
-            up(5,ii,j,k,isp) = -up(5,ii,j,k,isp)
-            up(6,ii,j,k,isp) = -up(6,ii,j,k,isp)
-          endif
-
-          enddo
-       enddo
-       enddo
-!$OMP END PARALLEL DO
-
-    enddo
-
-  end subroutine boundary_shock__particle_x
 
   subroutine boundary_shock__particle_yz(up,np2)
 
@@ -404,16 +363,16 @@ contains
         iii=0
         cnt_tmp = cnt2(j,k)
         loop1 :do ii=1,cnt2(j,k)
-        if(cnt(j,k) == 0)then
-          if(np2(j,k,isp) < flag(ii,j,k)) exit loop1
-          do while(np2(j,k,isp) == flag(cnt_tmp,j,k))
-            np2(j,k,isp) = np2(j,k,isp)-1
+          if(cnt(j,k) == 0)then
             if(np2(j,k,isp) < flag(ii,j,k)) exit loop1
-            cnt_tmp = cnt_tmp-1
-          enddo
-          do idim=1,ndim
-            up(idim,flag(ii,j,k),j,k,isp) = up(idim,np2(j,k,isp),j,k,isp)
-          enddo
+            do while(np2(j,k,isp) == flag(cnt_tmp,j,k))
+              np2(j,k,isp) = np2(j,k,isp)-1
+              if(np2(j,k,isp) < flag(ii,j,k)) exit loop1
+              cnt_tmp = cnt_tmp-1
+            enddo
+            do idim=1,ndim
+              up(idim,flag(ii,j,k),j,k,isp) = up(idim,np2(j,k,isp),j,k,isp)
+            enddo
             np2(j,k,isp) = np2(j,k,isp)-1
           else
             do idim=1,ndim
@@ -731,7 +690,7 @@ contains
   subroutine boundary_shock__curre(uj,nxs,nxe,nys,nye,nzs,nze,nxgs,nxge)
 
     integer, intent(in)    :: nxs, nxe, nys, nye, nzs, nze, nxgs, nxge
-    real(8), intent(inout) :: uj(3,nxs-2:nxe+2,nys-2:nye+2,nzs-2:nze+2)
+    real(8), intent(inout) :: uj(3,nxgs-2:nxge+2,nys-2:nye+2,nzs-2:nze+2)
     integer                :: i, j, k, ii
     real(8)                :: bff_snd_j(6*(nxe-nxs+5)*(nze-nzs+5))
     real(8)                :: bff_rcv_j(6*(nxe-nxs+5)*(nze-nzs+5))
