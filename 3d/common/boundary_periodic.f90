@@ -962,18 +962,18 @@ end subroutine boundary_periodic__init
     enddo
 !$OMP END PARALLEL DO
 
-!$OMP PARALLEL WORKSHARE
+!$OMP WORKSHARE
     uj(1:3,nxe-1,nys-2:nye+2,nzs-2:nze+2) = uj(1:3,nxe-1,nys-2:nye+2,nzs-2:nze+2)+uj(1:3,nxs-2,nys-2:nye+2,nzs-2:nze+2)
     uj(1:3,nxe  ,nys-2:nye+2,nzs-2:nze+2) = uj(1:3,nxe  ,nys-2:nye+2,nzs-2:nze+2)+uj(1:3,nxs-1,nys-2:nye+2,nzs-2:nze+2)
     uj(1:3,nxs  ,nys-2:nye+2,nzs-2:nze+2) = uj(1:3,nxs  ,nys-2:nye+2,nzs-2:nze+2)+uj(1:3,nxe+1,nys-2:nye+2,nzs-2:nze+2)
     uj(1:3,nxs+1,nys-2:nye+2,nzs-2:nze+2) = uj(1:3,nxs+1,nys-2:nye+2,nzs-2:nze+2)+uj(1:3,nxe+2,nys-2:nye+2,nzs-2:nze+2)
-!$OMP END PARALLEL WORKSHARE
-!$OMP PARALLEL WORKSHARE
+!$OMP END WORKSHARE
+!$OMP WORKSHARE
     uj(1:3,nxs-2,nys-2:nye+2,nzs-2:nze+2) = uj(1:3,nxe-1,nys-2:nye+2,nzs-2:nze+2)
     uj(1:3,nxs-1,nys-2:nye+2,nzs-2:nze+2) = uj(1:3,nxe  ,nys-2:nye+2,nzs-2:nze+2)
     uj(1:3,nxe+1,nys-2:nye+2,nzs-2:nze+2) = uj(1:3,nxs  ,nys-2:nye+2,nzs-2:nze+2)
     uj(1:3,nxe+2,nys-2:nye+2,nzs-2:nze+2) = uj(1:3,nxs+1,nys-2:nye+2,nzs-2:nze+2)
-!$OMP END PARALLEL WORKSHARE
+!$OMP END WORKSHARE
 
   end subroutine boundary_periodic__curre
 
@@ -1090,10 +1090,10 @@ end subroutine boundary_periodic__init
     enddo
 !$OMP END PARALLEL DO
 
-!$OMP PARALLEL WORKSHARE
+!$OMP WORKSHARE
     phi(nxs-1,nys-1:nye+1,nzs-1:nze+1) = phi(nxe,nys-1:nye+1,nzs-1:nze+1)
     phi(nxe+1,nys-1:nye+1,nzs-1:nze+1) = phi(nxs,nys-1:nye+1,nzs-1:nze+1)
-!$OMP END PARALLEL WORKSHARE
+!$OMP END WORKSHARE
 
 
   end subroutine boundary_periodic__phi
@@ -1186,8 +1186,8 @@ end subroutine boundary_periodic__init
       enddo
 !$OMP END PARALLEL DO
 
-      call MPI_SENDRECV(bff_snd_k(1),nl*(nxge-nxgs+1)*(nye-nys+1),mnpr,kdown,210, &
-                        bff_rcv_k(1),nl*(nxge-nxgs+1)*(nye-nys+1),mnpr,kup  ,210, &
+      call MPI_SENDRECV(bff_snd_k(1),nl*(nxge-nxgs+3)*(nye-nys+1),mnpr,kdown,210, &
+                        bff_rcv_k(1),nl*(nxge-nxgs+3)*(nye-nys+1),mnpr,kup  ,210, &
                         ncomw,nstat,nerr)
 
 !$OMP PARALLEL

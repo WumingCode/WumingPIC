@@ -1196,8 +1196,8 @@ contains
       enddo
 !$OMP END PARALLEL DO
 
-      call MPI_SENDRECV(bff_snd_k(1),nl*(nxge-nxgs+1)*(nye-nys+1),mnpr,kdown,210, &
-                        bff_rcv_k(1),nl*(nxge-nxgs+1)*(nye-nys+1),mnpr,kup  ,210, &
+      call MPI_SENDRECV(bff_snd_k(1),nl*(nxge-nxgs+3)*(nye-nys+1),mnpr,kdown,210, &
+                        bff_rcv_k(1),nl*(nxge-nxgs+3)*(nye-nys+1),mnpr,kup  ,210, &
                         ncomw,nstat,nerr)
 
 !$OMP PARALLEL
