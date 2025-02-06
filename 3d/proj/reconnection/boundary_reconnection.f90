@@ -1098,7 +1098,7 @@ contains
     do k=nzs-1,nze+1
     do j=nys-1,nye+1
        phi(nxs-1,j,k) = -phi(nxs,j,k)
-       phi(nxe+1,j,k) = 0.0D0
+       phi(nxe+1,j,k) = -phi(nxe-2,j,k)
     enddo
     enddo
 !$OMP END PARALLEL DO
@@ -1109,7 +1109,7 @@ contains
     do k=nzs-1,nze+1
     do j=nys-1,nye+1
        phi(nxs-1,j,k) = phi(nxs+1,j,k)
-       phi(nxe+1,j,k) = 0.0D0
+       phi(nxe+1,j,k) = phi(nxe-1,j,k)
     enddo
     enddo
 !$OMP END PARALLEL DO

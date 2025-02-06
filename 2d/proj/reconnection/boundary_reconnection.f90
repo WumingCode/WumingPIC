@@ -561,7 +561,7 @@ contains
 !$OMP PARALLEL DO PRIVATE(j)
     do j=nys-1,nye+1
        phi(nxs-1,j) = -phi(nxs,j)
-       phi(nxe+1,j) = 0.0D0
+       phi(nxe+1,j) = -phi(nxe-2,j)
     enddo
 !$OMP END PARALLEL DO
 
@@ -570,7 +570,7 @@ contains
 !$OMP PARALLEL DO PRIVATE(j)
     do j=nys-1,nye+1
        phi(nxs-1,j) = phi(nxs+1,j)
-       phi(nxe+1,j) = 0.0D0
+       phi(nxe+1,j) = phi(nxe-1,j)
     enddo
 !$OMP END PARALLEL DO
 
