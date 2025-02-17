@@ -1,11 +1,9 @@
 module mpi_set
 
+  use mpi
   implicit none
   private
-
   public :: mpi_set__init, MPI_WTIME
-
-  include 'mpif.h'
 
   integer, public, parameter :: mnpi  = MPI_INTEGER
   integer, public, parameter :: mnpr  = MPI_DOUBLE_PRECISION
