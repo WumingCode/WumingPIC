@@ -101,9 +101,9 @@ contains
     do it = it0+1, max_it
        ! update
        call particle__solv(gp, up, uf, cumcnt, nxs, nxe)
+       call bc__particle_x(gp, np2, nxs, nxe)
        call field__fdtd_i(uf, up, gp, cumcnt, nxs, nxe, &
             & bc__dfield, bc__curre, bc__phi)
-       call bc__particle_x(gp, np2, nxs, nxe)
        call bc__particle_yz(gp, np2)
        call sort__bucket(up, gp, cumcnt, np2, nxs, nxe)
       

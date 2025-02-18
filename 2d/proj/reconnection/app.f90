@@ -99,9 +99,9 @@ contains
     do it = it0+1, max_it
        ! update
        call particle__solv(gp, up, uf, cumcnt, nxs, nxe)
+       call bc__particle_x(gp, np2, nxs, nxe)
        call field__fdtd_i(uf, up, gp, cumcnt, nxs, nxe, &
             & bc__dfield, bc__curre, bc__phi)
-       call bc__particle_x(gp, np2, nxs, nxe)
        call bc__particle_y(gp, np2)
        call sort__bucket(up, gp, cumcnt, np2, nxs, nxe)
       
@@ -121,7 +121,6 @@ contains
           call mom_calc__nvt(mom, gp, np2)
           call bc__mom(mom)
           call io__mom(mom, uf, it)
-          write (*,*) "Checkpoint!!!"
           call energy_history(up, uf, np2, it)
        endif
 
@@ -148,11 +147,6 @@ contains
        end if
     enddo
 
-    ! save final state
-    it = max_it + 1
-    write(restart_file, '(i7.7, "_restart")') it
-    !call save_restart(up, uf, np2, nxs, nxe, it, restart_file)
-    !write (*,*) "Checkpoint!!!"
     call finalize()
 
   end subroutine app__main
