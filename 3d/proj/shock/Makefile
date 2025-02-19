@@ -14,4 +14,4 @@ clean :
 
 # Dependencies
 main.o: app.o
-app.o: boundary_shock.o
+app.o: boundary_shock.o $(WM_LIB3D)/libwuming3d_common.a $(WM_LIB)/libwuming_utils.a

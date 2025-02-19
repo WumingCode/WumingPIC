@@ -14,4 +14,4 @@ clean :
 
 # Dependencies
 main.o: app.o
-app.o: boundary_reconnection.o
+app.o: boundary_reconnection.o $(WM_LIB3D)/libwuming3d_common.a $(WM_LIB)/libwuming_utils.a

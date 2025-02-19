@@ -13,3 +13,4 @@ clean:
 	    rm -f $(TARGET) $(OBJS) *.i *.mod *.out
 
 main.o: app.o
+app.o: $(WM_LIB3D)/libwuming3d_common.a $(WM_LIB)/libwuming_utils.a
