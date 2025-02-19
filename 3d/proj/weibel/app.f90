@@ -309,7 +309,9 @@ contains
     b0   = r(1)*c/q(1)*wgi
 
     ! number of particles
+!$OMP PARALLEL WORKSHARE        
     np2(nys:nye,nzs:nze,1:nsp) = n0*(nxge-nxgs+1)
+!$OMP END PARALLEL WORKSHARE    
     if(nrank == 0)then
       if(n0*(nxge-nxgs+1) > np)then
         write(0,*)'Error: Too large number of particles'
@@ -480,7 +482,7 @@ contains
         lcumsum(nys,k+1,isp) = lcumsum(nye,k,isp)+np2(nye,k,isp)
       enddo
 
-      do j=nys,nze-1
+      do j=nys,nye-1
         lcumsum(j+1,nze,isp) = lcumsum(j,nze,isp)+np2(j,nze,isp)
       enddo
     enddo
