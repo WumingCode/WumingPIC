@@ -3,36 +3,6 @@
 
 Two-dimentional, special relativistic, electromagnetic particle-in-cell simulation code for general puposes in space and astrophysical plasmas.
 
-## Features
-* Solves the Vlasov-Maxwell equations by the particle-in-cell method
-* Buneman-Boris method for the equation of motion of particles.
-* Implicit FDTD scheme for the Maxwell equation (Hoshino, ApJ, 2013)
-* Esirkepov's charge conservation scheme for the current deposit with the 2nd-order shape function (Esirkepov, CPC, 2001)
-* Written in Fortran 90/95
-* Hybrid parallelization by MPI and OpenMP
-   - 1D domain decomposition in the x direction
-* SIMD optimization and efficient cache usage
-* MPI-IO raw data output with JSON-based metadata
-* Python scripts for HDF5 format convertor and quicklook
-
-## Requirements
-* Fortran compiler
-  - We prepare setting files for Makefile for different compilers, including Intel Fortran, GCC-Fortran, Fujitsu compiler
-  - Because of the requirement of JSON-Fortran library used in this code (https://github.com/jacobwilliams/json-fortran), **GCC-Fortran's version must be greater than 4.9**.
-
-* MPI library
-  - We have tested with MPICH and Open MPI
-  - The code works with the vender's MPI library on Fujitsu's supercomputer systems
-   
-* Python [OPTIONAL]
-  - The code generates raw binary data and corresponding JSON-based metadata files. A Python script in each physics directory converts them to HDF5 files as a post process
-  - A sample python script is prepared for quick look of the results
-
-## Installation
-```bash
-$ git clone git@github.com:WumingCode/WumingPIC2D.git
-```
-
 ## Code structure
 ``` 
 WumingPIC2D

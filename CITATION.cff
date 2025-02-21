@@ -2,7 +2,7 @@
 # Visit https://bit.ly/cffinit to generate yours today!
 
 cff-version: 1.2.0
-title: Wuming PIC2D
+title: Wuming PIC
 message: >-
   If you use this software, please cite it using the
   metadata from this file.
@@ -24,19 +24,25 @@ authors:
   - given-names: Taiki
     family-names: Jikei
     affiliation: The University of Tokyo
+    orcid: 'https://orcid.org/0000-0002-1876-5779'
   - given-names: Seiji
     family-names: Zenitani
     affiliation: 'Space Research Institute (IWF) '
+    orcid: 'https://orcid.org/0000-0002-0945-1815'
+  - given-names: Shota
+    family-names: Yokoyama
+    affiliation: Chiba University
+    orcid: 'https://orcid.org/0000-0002-3743-414X'
 identifiers:
   - type: doi
     value: 10.5281/zenodo.10990575
     description: >-
       This DOI represents all versions, and will always
       resolve to the latest one.
-repository-code: 'https://github.com/WumingCode/WumingPIC2D'
-url: 'https://github.com/WumingCode/WumingPIC2D'
+repository-code: 'https://github.com/WumingCode/WumingPIC'
+url: 'https://github.com/WumingCode/WumingPIC'
 abstract: >-
-  Two-dimentional, special relativistic, electromagnetic
-  particle-in-cell simulation code for general purposes in
-  space and astrophysical plasmas.
+  Two- and three-dimentional, special relativistic,
+  electromagnetic particle-in-cell simulation code for
+  general purposes in space and astrophysical plasmas.
 license: MIT

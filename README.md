@@ -1,7 +1,7 @@
-# Wuming PIC2D
+# Wuming PIC
 [![DOI](https://zenodo.org/badge/377835665.svg)](https://zenodo.org/badge/latestdoi/377835665)
 
-Two-dimentional, special relativistic, electromagnetic particle-in-cell simulation code for general puposes in space and astrophysical plasmas.
+Two- and Three-dimentional, special relativistic, electromagnetic particle-in-cell simulation code for general puposes in space and astrophysical plasmas.
 
 ## Features
 * Solves the Vlasov-Maxwell equations by the particle-in-cell method
@@ -10,7 +10,7 @@ Two-dimentional, special relativistic, electromagnetic particle-in-cell simulati
 * Esirkepov's charge conservation scheme for the current deposit with the 2nd-order shape function (Esirkepov, CPC, 2001)
 * Written in Fortran 90/95
 * Hybrid parallelization by MPI and OpenMP
-   - 1D domain decomposition in the x direction
+   - 1D/2D domain decomposition in the y-/y-z- directions.
 * SIMD optimization and efficient cache usage
 * MPI-IO raw data output with JSON-based metadata
 * Python scripts for HDF5 format convertor and quicklook
@@ -30,11 +30,37 @@ Two-dimentional, special relativistic, electromagnetic particle-in-cell simulati
 
 ## Installation
 ```bash
-$ git clone git@github.com:WumingCode/WumingPIC2D.git
+$ git clone git@github.com:WumingCode/WumingPIC.git
 ```
 
 ## Code structure
 ``` 
+WumingPIC3D/
+├── 2d
+│   ├── common
+│   ├── include
+│   ├── lib
+│   └── proj
+│       ├── reconnection
+│       ├── shock
+│       └── weibel
+├── 3d
+│   ├── common
+│   ├── include
+│   ├── lib
+│   └── proj
+│       ├── beam
+│       ├── reconnection
+│       ├── shock
+│       └── weibel
+├── include
+├── lib
+├── python
+└── utils
+    ├── iocore
+    └── json
+
+
 WumingPIC2D
 ├── Makefile
 │
@@ -76,7 +102,7 @@ WumingPIC2D
 1. Move to the installed directory.  
 
    ```bash
-   $ cd ./WumingPIC2D
+   $ cd ./WumingPIC
    ```
 
 2. Copy one of `comiler-*.mk` files depending on your compiler environment to `compiler.mk`.  
