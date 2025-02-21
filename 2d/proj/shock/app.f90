@@ -332,7 +332,9 @@ contains
     b0   = r(1)*c / q(1) * wgi * gam0
 
     ! number of particles
+!$OMP PARALLEL WORKSHARE    
     np2(nys:nye,1:nsp) = n0*(nxe-nxs-1)
+!$OMP END PARALLEL WORKSHARE
     if ( nrank == nroot ) then
        if ( n0*(nxge-nxgs) > np ) then
           write(0,*) 'Error: Too large number of particles'

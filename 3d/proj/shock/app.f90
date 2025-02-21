@@ -5,7 +5,6 @@ module app
   use wuming_utils
   use boundary_shock, bc__init        => boundary_shock__init,        &
                       bc__dfield      => boundary_shock__dfield,      &
-                      bc__particle_x  => boundary_shock__particle_x,  &
                       bc__particle_yz => boundary_shock__particle_yz, &
                       bc__injection   => boundary_shock__injection,   &
                       bc__curre       => boundary_shock__curre,       &
@@ -16,7 +15,6 @@ module app
 
   ! main simulation loop
   public:: app__main
-
 
   ! configuration file and initial parameter files
   character(len=*), parameter   :: config_default = 'config.json'
@@ -109,6 +107,7 @@ contains
 
     ! main loop
     do it = it0+1, max_it
+
       ! update
       call particle__solv(gp, up, uf, cumcnt, nxs, nxe)
       call bc__injection(gp, np2, nxs, nxe, u0)
@@ -267,6 +266,7 @@ contains
 
     nproc   = num_process
     nproc_j = num_process_j
+    nproc_k = nproc/nproc_j
     nx      = n_x
     ny      = n_y
     nz      = n_z
@@ -312,14 +312,14 @@ contains
     allocate(up(ndim,np,nys:nye,nzs:nze,nsp))
     allocate(gp(ndim,np,nys:nye,nzs:nze,nsp))
     allocate(mom(1:7,nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:nsp))
-!$OMP WORKSHARE
+!$OMP PARALLEL WORKSHARE
     np2(nys:nye,nzs:nze,1:nsp) = 0
     cumcnt(nxgs:nxge+1,nys:nye,nzs:nze,1:nsp) = 0
     uf(1:6,nxgs-2:nxge+2,nys-2:nye+2,nzs-2:nze+2) = 0d0
     up(1:ndim,1:np,nys:nye,nzs:nze,1:nsp) = 0d0
     gp(1:ndim,1:np,nys:nye,nzs:nze,1:nsp) = 0d0
     mom(1:7,nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:nsp) = 0d0
-!$OMP END WORKSHARE
+!$OMP END PARALLEL WORKSHARE
 
     ! set physical parameters
     delt = cfl*delx/c
@@ -339,9 +339,11 @@ contains
     b0   = r(1)*c/q(1)*wgi*gam0
 
     ! number of particles
+!$OMP PARALLEL WORKSHARE    
     np2(nys:nye,nzs:nze,1:nsp) = n0*(nxe-nxs-1)
+!$OMP END PARALLEL WORKSHARE
     if ( nrank == 0 ) then
-      if ( n0*(nxge-nxgs) > np ) then
+      if ( n0*(nxge-nxgs-1) > np ) then
         write(0,*) 'Error: Too large number of particles'
         stop
       endif
@@ -768,7 +770,7 @@ contains
       nginj_proc(index_proc(i)) = nginj_proc(index_proc(i))+1
     enddo
 
-    ! send from root to other processe
+    ! send from root to other processes
     call MPI_Bcast(nginj_proc, nproc, MPI_INTEGER, 0, MPI_COMM_WORLD, mpierr)
 
     ! * number of particles injected into each cell
@@ -783,8 +785,8 @@ contains
 
     call shuffle(index_grid)
     do i=1,nlmod
-      ig2(1) = nys+mod(index_grid(i)-1,nze-nzs+1)
-      ig2(2) = nzs+index_grid(i)/(nze-nzs+1)
+      ig2(1) = nys+mod(index_grid(i)-1,nye-nys+1)
+      ig2(2) = nzs+(index_grid(i)-1)/(nye-nys+1)
       nlinj_grid(ig2(1),ig2(2)) = nlinj_grid(ig2(1),ig2(2))+1
     enddo
 
@@ -830,7 +832,7 @@ contains
         up(3,ii1,j,k,1) = (k+uniform_rand())*delx
         up(1,ii2,j,k,2) = up(1,ii1,j,k,1)
         up(2,ii2,j,k,2) = up(2,ii1,j,k,1)
-        up(3,ii2,j,k,2) = up(3,ii1,j,k,2)
+        up(3,ii2,j,k,2) = up(3,ii1,j,k,1)
       enddo
     enddo
     enddo
@@ -882,10 +884,10 @@ contains
     enddo
 
     do isp = 1, nsp
-!$OMP WORKSHARE
+!$OMP PARALLEL WORKSHARE
       np2(nys:nye,nzs:nze,isp)        = np2(nys:nye,nzs:nze,isp)       +nlinj_grid(nys:nye,nzs:nze)
       cumcnt(nxe,nys:nye,nzs:nze,isp) = cumcnt(nxe,nys:nye,nzs:nze,isp)+nlinj_grid(nys:nye,nzs:nze)
-!$OMP END WORKSHARE
+!$OMP END PARALLEL WORKSHARE
     enddo
 
 !$OMP PARALLEL DO PRIVATE(j,k)
