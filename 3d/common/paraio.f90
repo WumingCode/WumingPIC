@@ -733,7 +733,7 @@ contains
     nd    = 4
     lshape = (/nxg, nyl, nzl, nsp, 0/)
     gshape = (/nxg, nyg, nzg, nsp, 0/)
-    offset = (/0, nyl*mod(nrank,nproc_j), nzl*(nrank/nproc_j), 0, 0/)
+    offset = (/0, nyl*(nrank/nproc_k), nzl*mod(nrank,nproc_k), 0, 0/)
     lsize  = product(lshape(1:nd))
     gsize  = product(gshape(1:nd))
     dsize  = gsize * 8
@@ -756,7 +756,7 @@ contains
     nd     = 5
     lshape = (/3, nxg, nyl, nzl ,nsp/)
     gshape = (/3, nxg, nyg, nzg, nsp/)
-    offset = (/0, 0, nyl*mod(nrank,nproc_j), nzl*(nrank/nproc_j), 0/)
+    offset = (/0, 0, nyl*(nrank/nproc_k), nzl*mod(nrank,nproc_k), 0/)
     lsize  = product(lshape(1:nd))
     gsize  = product(gshape(1:nd))
     dsize  = gsize * 8
@@ -780,7 +780,7 @@ contains
     nd     = 5
     lshape = (/3, nxg, nyl, nzl, nsp/)
     gshape = (/3, nxg, nyg, nzg, nsp/)
-    offset = (/0, 0, nyl*mod(nrank,nproc_j), nzl*(nrank/nproc_j), 0/)
+    offset = (/0, 0, nyl*(nrank/nproc_k), nzl*mod(nrank,nproc_k), 0/)
     lsize  = product(lshape(1:nd))
     gsize  = product(gshape(1:nd))
     dsize  = gsize * 8
@@ -812,7 +812,7 @@ contains
     nd     = 4
     lshape = (/6, nxg, nyl, nzl, 0/)
     gshape = (/6, nxg, nyg, nzg, 0/)
-    offset = (/0, 0, nyl*mod(nrank,nproc_j), nzl*(nrank/nproc_j), 0/)
+    offset = (/0, 0, nyl*(nrank/nproc_k), nzl*mod(nrank,nproc_k), 0/)
     lsize  = product(lshape(1:nd))
     gsize  = product(gshape(1:nd))
     dsize  = gsize * 8
@@ -947,7 +947,7 @@ contains
     nd     = 4
     lshape = (/6, nxg, nyl, nzl, 0/)
     gshape = (/6, nxg, nyg, nzg, 0/)
-    offset = (/0, 0, nyl*mod(nrank,nproc_j), nzl*(nrank/nproc_j), 0/)
+    offset = (/0, 0, nyl*(nrank/nproc_k), nzl*mod(nrank,nproc_k), 0/)
     lsize  = product(lshape(1:nd))
     gsize  = product(gshape(1:nd))
     dsize  = gsize * 8
