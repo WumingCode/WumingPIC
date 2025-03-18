@@ -35,7 +35,7 @@ $ git clone git@github.com:WumingCode/WumingPIC.git
 
 ## Code structure
 ``` 
-WumingPIC3D/
+WumingPIC/
 ├── 2d
 │   ├── common
 │   ├── include
@@ -56,12 +56,16 @@ WumingPIC3D/
 ├── include
 ├── lib
 ├── python
-└── utils
+│   └── json2hdf5.py - A python script to convert JSON files to HDF5 metadata
+│   └── jsoncheck.py - For checking reading json files
+└── utils - some utility files for I/O functions
     ├── iocore
     └── json
+```
+In each 2d or 3d code, files are organized as follows
 
-
-WumingPIC2D
+```
+{2d,3d}
 ├── Makefile
 │
 ├── README.md
@@ -69,13 +73,7 @@ WumingPIC2D
 ├── common
 │   └── common files of PIC algorithms
 │
-├── common.mk
-│
-├── compiler-fujitsu.mk
-│
-├── compiler-gcc.mk
-│
-├── compiler-intel.mk
+├── common{2d,3d}.mk
 │
 ├── include
 │   └── directory for module files
@@ -84,18 +82,12 @@ WumingPIC2D
 │   └── directory for common library
 │
 ├── proj
-│   ├── shock
-│   │   └── collsion-less shock simulation setup files and scripts for post process
-│   ├── weibel
-│   │   └── Weibel instability simulation setup files and scripts for post process
-│   └── reconnection
-│       └── magnetic reconnection simulation setup files and scripts for post process
-│
-├── python
-│   └── json2hdf5.py - A python script to convert JSON files to HDF5 metadata
-│
-└── utils
-    └── utility files for MPI-IO and JSON output
+    ├── shock
+    │   └── collsion-less shock simulation setup files and scripts for post process
+    ├── weibel
+    │   └── Weibel instability simulation setup files and scripts for post process
+    └── reconnection
+        └── magnetic reconnection simulation setup files and scripts for post process
 ```
 
 ## Preparation
@@ -112,33 +104,33 @@ WumingPIC2D
    $ cp compiler-gcc.mk compiler.mk
    ```
 
-3. Make a common library.  
+3. Make common libraries.
    Compile via
 
    ```bash
    $ make
    ```
 
-   and make sure `libwuming*.a` are genererated in the library directory `lib/`.  
+   and make sure `libwuming*.a` are genererated in the library directories of `lib/` and `{2d,3d}/lib/`.  
    You are now ready for executing a specific physics problem.
 
 ## Physics Problems
 
 Following physics problem setups are available at present.
-* [Weibel instability](proj/weibel/README.md)
-* [Collision-less shock](proj/shock/README.md)
-* [Magnetic reconnection](proj/reconnection/README.md)
+* Weibel instability ([2d](2d/proj/weibel/README.md), [3d](3d/proj/weibel/README.md))
+* Collision-less shock ([2d](2d/proj/shock/README.md), [3d](3d/proj/shock/README.md))
+* Magnetic reconnection ([2d](proj/reconnection/README.md), [3d](proj/reconnection/README.md))
 
 ### How to run
-Go to one of the physics problem directories `proj/*` and make an executable `main.out`.  
+Go to one of the physics problem directories `{2d,3d}/proj/*` and make an executable `main.out`.  
 For instance,
 
 ```bash
-$ cd proj/weibel
+$ cd 2d/proj/weibel
 $ make
 ```
 
-will create an executable for Weibel instability. This will read parameters from a configuration file in JSON format. You may copy a sample configuration file `config_sample.json` to `config.json`:
+will create an executable for 2D Weibel instability. This will read parameters from a configuration file in JSON format. You may copy a sample configuration file `config_sample.json` to `config.json`:
 
 ```bash
 $ cp config_sample.json config.json
@@ -199,7 +191,7 @@ via a script `json2hdf5.py` which is located in `python/` directory.
 For instance in the working directory,
 
 ```bash
-$ python ../../python/json2hdf5.py *.json
+$ python ../../../python/json2hdf5.py *.json
 ```
 
 will process all JSON files in the current directory and generate HDF5 format
@@ -233,12 +225,12 @@ then the previous snapshot data will be read automatically.
 Join Slack workspace via https://join.slack.com/t/wumingpic/shared_invite/zt-xlm8cixg-NOV33dyorO1Whc4~FcVJ0g .
 
 ## Credits
-WumingPIC2D code uses 
+WumingPIC code uses 
 * [JSON-Fortran](https://github.com/jacobwilliams/json-fortran) API for reading/writing JSON files from Fortran.
 * [Amano's MPI-IO, JSON, HDF5 utitlity files](https://github.com/amanotk)
 
 ## License
-WumingPIC2D code is distributed under [the MIT license](LICENSE.txt).
+WumingPIC code is distributed under [the MIT license](LICENSE.txt).
 
 ## Cite as
 [![DOI](https://zenodo.org/badge/377835665.svg)](https://zenodo.org/badge/latestdoi/377835665)
