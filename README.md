@@ -139,7 +139,7 @@ In each 2d or 3d code, files are organized as follows
 Following physics problem setups are available at present.
 * Weibel instability ([2d](2d/proj/weibel/README.md), [3d](3d/proj/weibel/README.md))
 * Collision-less shock ([2d](2d/proj/shock/README.md), [3d](3d/proj/shock/README.md))
-* Magnetic reconnection ([2d](proj/reconnection/README.md), [3d](proj/reconnection/README.md))
+* Magnetic reconnection ([2d](2d/proj/reconnection/README.md), [3d](3d/proj/reconnection/README.md))
 
 ### How to run
 Go to one of the physics problem directories `{2d,3d}/proj/*` and make an executable `main.out`.
