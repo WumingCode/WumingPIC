@@ -49,14 +49,26 @@ WumingPIC/
 │   ├── include
 │   ├── lib
 │   └── proj
-│       ├── beam
 │       ├── reconnection
 │       ├── shock
 │       └── weibel
+│
+├── common.mk
+│
+├── compiler-fujitsu.mk
+│
+├── compiler-gcc.mk
+│
+├── compiler-intel.mk
+│
+├── compiler-nvidia.mk
+│
 ├── include
+│   └── directory for module files
 ├── lib
+│   └── directory for common library
 ├── python
-│   └── json2hdf5.py - A python script to convert JSON files to HDF5 metadata
+│   ├── json2hdf5.py - A python script to convert JSON files to HDF5 metadata
 │   └── jsoncheck.py - For checking reading json files
 └── utils - some utility files for I/O functions
     ├── iocore
