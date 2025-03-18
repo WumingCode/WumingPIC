@@ -17,7 +17,7 @@ Two- and Three-dimentional, special relativistic, electromagnetic particle-in-ce
 
 ## Requirements
 * Fortran compiler
-  - We prepare setting files for Makefile for different compilers, including Intel Fortran, GCC-Fortran, Fujitsu compiler
+  - We prepare setting files for Makefile for different compilers, including Cray compiler, Fujitsu compiler, GCC-Fortran, Intel Fortran, NVIDIA HPC Fortran
   - Because of the requirement of JSON-Fortran library used in this code (https://github.com/jacobwilliams/json-fortran), **GCC-Fortran's version must be greater than 4.9**.
 
 * MPI library
@@ -53,7 +53,17 @@ WumingPIC/
 │       ├── shock
 │       └── weibel
 │
+├── CITATION.cff
+│
+├── LICENSE.txt
+│
+├── Makefile
+│
+├── README.md
+│
 ├── common.mk
+│
+├── compiler-cray.mk
 │
 ├── compiler-fujitsu.mk
 │
@@ -80,8 +90,6 @@ In each 2d or 3d code, files are organized as follows
 {2d,3d}
 ├── Makefile
 │
-├── README.md
-│
 ├── common
 │   └── common files of PIC algorithms
 │
@@ -93,7 +101,7 @@ In each 2d or 3d code, files are organized as follows
 ├── lib
 │   └── directory for common library
 │
-├── proj
+└── proj
     ├── shock
     │   └── collsion-less shock simulation setup files and scripts for post process
     ├── weibel
@@ -103,13 +111,13 @@ In each 2d or 3d code, files are organized as follows
 ```
 
 ## Preparation
-1. Move to the installed directory.  
+1. Move to the installed directory.
 
    ```bash
    $ cd ./WumingPIC
    ```
 
-2. Copy one of `comiler-*.mk` files depending on your compiler environment to `compiler.mk`.  
+2. Copy one of `comiler-*.mk` files depending on your compiler environment to `compiler.mk`.
    For instance, copy `compiler-gcc.mk` if you are using gfortran.
 
    ```bash
@@ -123,7 +131,7 @@ In each 2d or 3d code, files are organized as follows
    $ make
    ```
 
-   and make sure `libwuming*.a` are genererated in the library directories of `lib/` and `{2d,3d}/lib/`.  
+   and make sure `libwuming*.a` are genererated in the library directories of `lib/` and `{2d,3d}/lib/`.
    You are now ready for executing a specific physics problem.
 
 ## Physics Problems
@@ -134,7 +142,7 @@ Following physics problem setups are available at present.
 * Magnetic reconnection ([2d](proj/reconnection/README.md), [3d](proj/reconnection/README.md))
 
 ### How to run
-Go to one of the physics problem directories `{2d,3d}/proj/*` and make an executable `main.out`.  
+Go to one of the physics problem directories `{2d,3d}/proj/*` and make an executable `main.out`.
 For instance,
 
 ```bash
@@ -154,7 +162,7 @@ and edit it as you like. By default, running the code via
 $ mpiexec -np 4 ./main.out
 ```
 
-will try to read `config.json`.  
+will try to read `config.json`.
 
 If you want, you may explicitly specify the filename with a command line argument:
 
