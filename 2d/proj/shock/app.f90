@@ -336,7 +336,7 @@ contains
     np2(nys:nye,1:nsp) = n0*(nxe-nxs-1)
 !$OMP END PARALLEL WORKSHARE
     if ( nrank == nroot ) then
-       if ( n0*(nxge-nxgs) > np ) then
+       if ( n0*(nxge-nxgs-1) > np ) then
           write(0,*) 'Error: Too large number of particles'
           stop
        endif
