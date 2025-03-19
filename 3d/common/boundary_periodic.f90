@@ -962,18 +962,18 @@ end subroutine boundary_periodic__init
     enddo
 !$OMP END PARALLEL DO
 
-!$OMP WORKSHARE
+!$OMP PARALLEL WORKSHARE
     uj(1:3,nxe-1,nys-2:nye+2,nzs-2:nze+2) = uj(1:3,nxe-1,nys-2:nye+2,nzs-2:nze+2)+uj(1:3,nxs-2,nys-2:nye+2,nzs-2:nze+2)
     uj(1:3,nxe  ,nys-2:nye+2,nzs-2:nze+2) = uj(1:3,nxe  ,nys-2:nye+2,nzs-2:nze+2)+uj(1:3,nxs-1,nys-2:nye+2,nzs-2:nze+2)
     uj(1:3,nxs  ,nys-2:nye+2,nzs-2:nze+2) = uj(1:3,nxs  ,nys-2:nye+2,nzs-2:nze+2)+uj(1:3,nxe+1,nys-2:nye+2,nzs-2:nze+2)
     uj(1:3,nxs+1,nys-2:nye+2,nzs-2:nze+2) = uj(1:3,nxs+1,nys-2:nye+2,nzs-2:nze+2)+uj(1:3,nxe+2,nys-2:nye+2,nzs-2:nze+2)
-!$OMP END WORKSHARE
-!$OMP WORKSHARE
+!$OMP END PARALLEL WORKSHARE
+!$OMP PARALLEL WORKSHARE
     uj(1:3,nxs-2,nys-2:nye+2,nzs-2:nze+2) = uj(1:3,nxe-1,nys-2:nye+2,nzs-2:nze+2)
     uj(1:3,nxs-1,nys-2:nye+2,nzs-2:nze+2) = uj(1:3,nxe  ,nys-2:nye+2,nzs-2:nze+2)
     uj(1:3,nxe+1,nys-2:nye+2,nzs-2:nze+2) = uj(1:3,nxs  ,nys-2:nye+2,nzs-2:nze+2)
     uj(1:3,nxe+2,nys-2:nye+2,nzs-2:nze+2) = uj(1:3,nxs+1,nys-2:nye+2,nzs-2:nze+2)
-!$OMP END WORKSHARE
+!$OMP END PARALLEL WORKSHARE
 
   end subroutine boundary_periodic__curre
 
@@ -1090,10 +1090,10 @@ end subroutine boundary_periodic__init
     enddo
 !$OMP END PARALLEL DO
 
-!$OMP WORKSHARE
+!$OMP PARALLEL WORKSHARE
     phi(nxs-1,nys-1:nye+1,nzs-1:nze+1) = phi(nxe,nys-1:nye+1,nzs-1:nze+1)
     phi(nxe+1,nys-1:nye+1,nzs-1:nze+1) = phi(nxs,nys-1:nye+1,nzs-1:nze+1)
-!$OMP END WORKSHARE
+!$OMP END PARALLEL WORKSHARE
 
 
   end subroutine boundary_periodic__phi
