@@ -2,6 +2,7 @@
 *.ps
 *.eps
 *.png
+!sample.png
 *.jpg
 *.pdf
 *.svg

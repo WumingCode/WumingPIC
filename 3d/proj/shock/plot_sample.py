@@ -14,6 +14,7 @@ def test_param(fn):
     print_param = {
         'nx' : 'number of grid in x',
         'ny' : 'number of grid in y',
+        'nz' : 'number of grid in z',
         'np' : 'maximum number of particles in y',
         'c' : 'speed of light',
         'r' : 'mass',
@@ -85,6 +86,7 @@ def test_moment(fn, it, param, batch=True):
     # plot moment
     nx    = param['nx']
     ny    = param['ny']
+    nz    = param['nz']
     n0    = param['n0']
     dt    = param['delt']
     dx    = param['delx']
@@ -248,7 +250,6 @@ def test_moment(fn, it, param, batch=True):
     if batch:
         plt.savefig('moment.png')
 
-
 def test_particle(fn, it, param, batch=True):
     # read particle data
     with h5py.File(fn, 'r') as dat:
@@ -256,12 +257,16 @@ def test_particle(fn, it, param, batch=True):
         up2  = dat['up02'][()] # electrons
         xpi  = up1[...,0]
         ypi  = up1[...,1]
-        upxi = up1[...,2]
-        upyi = up1[...,3]
+        zpi  = up1[...,2]
+        upxi = up1[...,3]
+        upyi = up1[...,4]
+        upzi = up1[...,5]
         xpe  = up2[...,0]
         ype  = up2[...,1]
-        upxe = up2[...,2]
-        upye = up2[...,3]
+        zpe  = up2[...,2]
+        upxe = up2[...,3]
+        upye = up2[...,4]
+        upze = up2[...,5]
 
     # check uniquity of particle ID
     for i, up in enumerate((up1, up2,)):

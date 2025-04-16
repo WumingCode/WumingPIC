@@ -14,6 +14,7 @@ def test_param(fn):
     print_param = {
         'nx' : 'number of grid in x',
         'ny' : 'number of grid in y',
+        'nz' : 'number of grid in z',
         'np' : 'maximum number of particles in y',
         'c' : 'speed of light',
         'r' : 'mass',
