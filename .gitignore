@@ -3,6 +3,7 @@
 *.eps
 *.png
 !sample.png
+!reconnection3d.png
 *.jpg
 *.pdf
 *.svg
