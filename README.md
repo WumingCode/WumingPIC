@@ -1,5 +1,5 @@
 # Wuming PIC
-[![DOI](https://zenodo.org/badge/377835665.svg)](https://zenodo.org/badge/latestdoi/377835665)
+<!--[![DOI](https://zenodo.org/badge/377835665.svg)](https://zenodo.org/badge/latestdoi/377835665)-->
 
 Two- and Three-dimentional, special relativistic, electromagnetic particle-in-cell simulation code for general puposes in space and astrophysical plasmas.
 
@@ -29,6 +29,7 @@ Two- and Three-dimentional, special relativistic, electromagnetic particle-in-ce
 * Python [OPTIONAL]
   - The code generates raw binary data and corresponding JSON-based metadata files. A Python script in each physics directory converts them to HDF5 files as a post process
   - A sample python script is prepared for quick look of the results
+  - [Here](pyvista_demo.rst) is a demonstration of 3D visualazation using PyVista library
 
 ## Installation
 ```bash
@@ -255,6 +256,6 @@ WumingPIC code uses
 WumingPIC code is distributed under [the MIT license](LICENSE.txt).
 
 ## Cite as
-[![DOI](https://zenodo.org/badge/377835665.svg)](https://zenodo.org/badge/latestdoi/377835665)
+<!--[![DOI](https://zenodo.org/badge/377835665.svg)](https://zenodo.org/badge/latestdoi/377835665)-->
 
 Cite https://zenodo.org/doi/10.5281/zenodo.10990575, which represents all versions and will always resolve to the latest release.
