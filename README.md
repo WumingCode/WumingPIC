@@ -29,7 +29,7 @@ Two- and Three-dimentional, special relativistic, electromagnetic particle-in-ce
 * Python [OPTIONAL]
   - The code generates raw binary data and corresponding JSON-based metadata files. A Python script in each physics directory converts them to HDF5 files as a post process
   - A sample python script is prepared for quick look of the results
-  - [Here](pyvista_demo.rst) is a demonstration of 3D visualazation using PyVista library
+  - [Here](pyvista_demo.md) is a demonstration of the 3D visualization using **PyVista** library
 
 ## Installation
 ```bash
