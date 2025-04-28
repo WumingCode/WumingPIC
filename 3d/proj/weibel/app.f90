@@ -246,7 +246,7 @@ contains
     nx      = n_x
     ny      = n_y
     nz      = n_z
-    np      = n_ppc*nx*5
+    np      = n_ppc*nx*3
     n0      = n_ppc
     nxgs    = 2
     nxge    = nxgs+nx-1

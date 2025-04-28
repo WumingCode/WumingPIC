@@ -123,7 +123,6 @@ contains
           call mom_calc__nvt(mom, gp, np2)
           call bc__mom(mom)
           call io__mom(mom, uf, it)
-          write (*,*) "Checkpoint!!!"
           call energy_history(up, uf, np2, it)
        endif
 
@@ -153,8 +152,7 @@ contains
     ! save final state
     it = max_it + 1
     write(restart_file, '(i7.7, "_restart")') it
-    !call save_restart(up, uf, np2, nxs, nxe, it, restart_file)
-    !write (*,*) "Checkpoint!!!"
+    call save_restart(up, uf, np2, nxs, nxe, it, restart_file)
     call finalize()
 
   end subroutine app__main
