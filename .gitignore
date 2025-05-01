@@ -2,7 +2,7 @@
 *.ps
 *.eps
 *.png
-!sample.png
+!cover_image.png
 !reconnection3d.png
 *.jpg
 *.pdf

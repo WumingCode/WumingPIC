@@ -1,6 +1,8 @@
 # **Pyvista** for 3D visualization of PIC simulation data
 Here we present a demonstration of 3D visualazation of Wuming PIC simulation data. Although there are several ways of the 3D visualzation, including **ParaView** and **VisIt**, we recommend to use **PyVista** because of its usability with minimum installation of the additional libraries. **PyVista** is based on the **VTK** format, but it offers simple *pythonic* interfaces to the VTK libarary. For more details, refer to the official website: https://docs.pyvista.org/
 
+The original jupyter notebook is [here](pyvista_demo.ipynb)
+
 ## Installation
 For instaling via pip,
 
@@ -42,8 +44,8 @@ print(den.shape) # (nz, ny, nx)
 ```
 
     (384, 660, 161)
-    CPU times: user 40.5 s, sys: 5min 49s, total: 6min 30s
-    Wall time: 6min 45s
+    CPU times: user 40.3 s, sys: 5min 48s, total: 6min 29s
+    Wall time: 6min 43s
 
 
 ## Converting ndarray to pyvista's dataset
@@ -64,22 +66,26 @@ mesh.cell_data['Number density'] = den.T.reshape(-1,order='F')
 mesh.cell_data['mag_lines'] = ef[:,:,:,0:3].transpose(2,1,0,3).reshape((mesh.n_cells,3),order='F')
 ```
 
-Preparting point data for drawing the field lines, which is necessary for using `streamlines()`. `cell_data_to_point_data()` method calculates the value at nodes by taking an average of the neibouring cells.
-
 ## Converting from cell data to grid data for `streamlines()`
-Starting points to draw stream lines are on the surface of a sphere of radius `source_radius` located at `source_center` .
+Preparting point data for drawing the field lines, which is necessary for using `streamlines()`. `cell_data_to_point_data()` method calculates the value at nodes by taking an average of the neibouring cells.
 
 
 ```python
 mesh2 = mesh.cell_data_to_point_data()
-mesh2.point_data.pop('Number density')
+_ = mesh2.point_data.pop('Number density')
+```
+
+Starting points to draw stream lines are on the surface of a sphere of radius `source_radius` located at `source_center` .
+
+
+```python
 stream1 = mesh2.streamlines(vectors='mag_lines',n_points=170,source_radius=nxyz[2]/3,source_center=(nxyz[0]/2,0,nxyz[2]/2))
 stream2 = mesh2.streamlines(vectors='mag_lines',n_points=170,source_radius=nxyz[2]/3,source_center=(nxyz[0]/2,nxyz[1]-1,nxyz[2]/2))
 stream3 = mesh2.streamlines(vectors='mag_lines',n_points=170,source_radius=nxyz[2]/3,source_center=(nxyz[0]/2,nxyz[1]/2,nxyz[2]/2))
 ```
 
 ## Drawing
-If you prefer to operate the 3D view interactively, set `jbackend='trame'` instead.
+If you prefer to operate the 3D view interactively, set `jupyter_backend='trame'` instead.
 
 
 ```python
@@ -102,9 +108,8 @@ pl.camera.azimuth+=30
 pl.camera.elevation+=30
 pl.camera.zoom(1.1)
 
-pl.screenshot('Reconnection3D.png')
-jbackend = 'static' #disable interactive mode
-pl.show(jupyter_backend=jbackend)
+pl.screenshot('reconnection3d.png')
+pl.show(jupyter_backend= 'static') #disable interactive mode
 ```
 
 
