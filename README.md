@@ -3,7 +3,7 @@
 
 Two- and Three-dimentional, special relativistic, electromagnetic particle-in-cell simulation code for general puposes in space and astrophysical plasmas.
 
-![shock](/sample.png)
+![cover](/cover_image.png)
 
 ## Features
 * Solves the Vlasov-Maxwell equations by the particle-in-cell method
