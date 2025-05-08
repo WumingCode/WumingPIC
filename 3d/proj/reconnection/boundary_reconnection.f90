@@ -1,16 +1,16 @@
-module boundary_periodic
+module boundary_reconnection
   use mpi
   implicit none
 
   private
 
-  public :: boundary_periodic__init
-  public :: boundary_periodic__dfield
-  public :: boundary_periodic__particle_x
-  public :: boundary_periodic__particle_yz
-  public :: boundary_periodic__curre
-  public :: boundary_periodic__phi
-  public :: boundary_periodic__mom
+  public :: boundary_reconnection__init
+  public :: boundary_reconnection__dfield
+  public :: boundary_reconnection__particle_x
+  public :: boundary_reconnection__particle_yz
+  public :: boundary_reconnection__curre
+  public :: boundary_reconnection__phi
+  public :: boundary_reconnection__mom
 
   logical, save :: is_init = .false.
   integer, save :: ndim, np, nsp, nxgs, nxge, nygs, nyge, nzgs, nzge, nys, nye, nzs, nze
@@ -19,10 +19,11 @@ module boundary_periodic
   integer, allocatable :: nstat(:)
   real(8), save :: delx, delt, c, d_delx
 
+
 contains
 
 
-  subroutine boundary_periodic__init(ndim_in,np_in,nsp_in,nxgs_in,nxge_in,nygs_in,nyge_in,nzgs_in, &
+  subroutine boundary_reconnection__init(ndim_in,np_in,nsp_in,nxgs_in,nxge_in,nygs_in,nyge_in,nzgs_in, &
        & nzge_in,nys_in,nye_in,nzs_in,nze_in,jup_in,jdown_in,kup_in,kdown_in,mnpi_in,mnpr_in, &
        & ncomw_in,nerr_in,nstat_in,delx_in,delt_in,c_in)
 
@@ -62,46 +63,53 @@ contains
 
     is_init = .true.
 
-end subroutine boundary_periodic__init
+  end subroutine boundary_reconnection__init
 
 
-  subroutine boundary_periodic__particle_x(up,np2)
+  subroutine boundary_reconnection__particle_x(up,np2,nxs,nxe)
 
+    integer, intent(in)    :: nxs, nxe
     integer, intent(in)    :: np2(nys:nye,nzs:nze,nsp)
     real(8), intent(inout) :: up(ndim,np,nys:nye,nzs:nze,nsp)
     integer                :: j, k, ii, isp, ipos
 
     if(.not.is_init)then
-      write(6,*)'Initialize first by calling boundary__init()'
-      stop
+       write(6,*)'Initialize first by calling boundary_reconnection__init()'
+       stop
     endif
 
     do isp=1,nsp
 
 !$OMP PARALLEL DO PRIVATE(ii,j,k,ipos)
-      do k=nzs,nze
-      do j=nys,nye
-        do ii=1,np2(j,k,isp)
+       do k=nzs,nze
+       do j=nys,nye
+          do ii=1,np2(j,k,isp)
 
-          ipos = int(up(1,ii,j,k,isp)*d_delx)
+             ipos = int(up(1,ii,j,k,isp)/delx)
 
-          if(ipos < nxgs)then
-            up(1,ii,j,k,isp) = up(1,ii,j,k,isp)+(nxge-nxgs+1)*delx
-          else if(ipos >= nxge+1)then
-            up(1,ii,j,k,isp) = up(1,ii,j,k,isp)-(nxge-nxgs+1)*delx
-          endif
+             if(ipos < nxs+1)then
+                up(1,ii,j,k,isp) = 2.*(nxs+1)*delx-up(1,ii,j,k,isp)
+                up(4,ii,j,k,isp) = -up(4,ii,j,k,isp)
+                up(5,ii,j,k,isp) = -up(5,ii,j,k,isp)
+                up(6,ii,j,k,isp) = -up(6,ii,j,k,isp)
+             else if(ipos >= nxe-1)then
+                up(1,ii,j,k,isp) = 2.*(nxe-1)*delx-up(1,ii,j,k,isp)
+                up(4,ii,j,k,isp) = -up(4,ii,j,k,isp)
+                up(5,ii,j,k,isp) = -up(5,ii,j,k,isp)
+                up(6,ii,j,k,isp) = -up(6,ii,j,k,isp)
+             endif
 
-        enddo
-      enddo
-      enddo
+          enddo
+       enddo
+       enddo
 !$OMP END PARALLEL DO
 
     enddo
 
-  end subroutine boundary_periodic__particle_x
+  end subroutine boundary_reconnection__particle_x
 
 
-  subroutine boundary_periodic__particle_yz(up,np2)
+  subroutine boundary_reconnection__particle_yz(up,np2) ! transported from boundary_period
 
 !$  use omp_lib
 
@@ -452,10 +460,10 @@ end subroutine boundary_periodic__init
 !$  enddo
 !$OMP END PARALLEL DO
 
-  end subroutine boundary_periodic__particle_yz
+  end subroutine boundary_reconnection__particle_yz
 
 
-  subroutine boundary_periodic__dfield(df,nxs,nxe,nys,nye,nzs,nze,nxgs,nxge)
+  subroutine boundary_reconnection__dfield(df,nxs,nxe,nys,nye,nzs,nze,nxgs,nxge) ! transported from periodic
 
     integer, intent(in)    :: nxs, nxe, nys, nye, nzs, nze, nxgs, nxge
     real(8), intent(inout) :: df(6,nxgs-2:nxge+2,nys-2:nye+2,nzs-2:nze+2)
@@ -662,18 +670,23 @@ end subroutine boundary_periodic__init
     enddo
 !$OMP END PARALLEL DO
 
-!$OMP PARALLEL WORKSHARE
-    df(1:6,nxs-2,nys-2:nye+2,nzs-2:nze+2) = df(1:6,nxe-1,nys-2:nye+2,nzs-2:nze+2)
-    df(1:6,nxs-1,nys-2:nye+2,nzs-2:nze+2) = df(1:6,nxe,nys-2:nye+2,nzs-2:nze+2)
-    df(1:6,nxe+1,nys-2:nye+2,nzs-2:nze+2) = df(1:6,nxs,nys-2:nye+2,nzs-2:nze+2)
-    df(1:6,nxe+2,nys-2:nye+2,nzs-2:nze+2) = df(1:6,nxs+1,nys-2:nye+2,nzs-2:nze+2)
-!$OMP END PARALLEL WORKSHARE
+!$OMP PARALLEL DO PRIVATE(j,k)
+    do k=nzs-2,nze+2
+    do j=nys-2,nye+2
+       df(1,  nxs-1,j,k) = -df(1,  nxs,  j,k)
+       df(2:4,nxs-1,j,k) =  df(2:4,nxs+1,j,k)
+       df(5:6,nxs-1,j,k) = -df(5:6,nxs,  j,k)
+       df(1,  nxe  ,j,k) = -df(1,  nxe-1,j,k)
+       df(2:4,nxe+1,j,k) =  df(2:4,nxe-1,j,k)
+       df(5:6,nxe  ,j,k) = -df(5:6,nxe-1,j,k)
+    enddo
+    enddo
+!$OMP END PARALLEL DO
+
+  end subroutine boundary_reconnection__dfield
 
 
-  end subroutine boundary_periodic__dfield
-
-
-  subroutine boundary_periodic__curre(uj,nxs,nxe,nys,nye,nzs,nze,nxgs,nxge)
+  subroutine boundary_reconnection__curre(uj,nxs,nxe,nys,nye,nzs,nze,nxgs,nxge) ! transported from periodic
 
     integer, intent(in)    :: nxs, nxe, nys, nye, nzs, nze, nxgs, nxge
     real(8), intent(inout) :: uj(3,nxgs-2:nxge+2,nys-2:nye+2,nzs-2:nze+2)
@@ -962,23 +975,10 @@ end subroutine boundary_periodic__init
     enddo
 !$OMP END PARALLEL DO
 
-!$OMP PARALLEL WORKSHARE
-    uj(1:3,nxe-1,nys-2:nye+2,nzs-2:nze+2) = uj(1:3,nxe-1,nys-2:nye+2,nzs-2:nze+2)+uj(1:3,nxs-2,nys-2:nye+2,nzs-2:nze+2)
-    uj(1:3,nxe  ,nys-2:nye+2,nzs-2:nze+2) = uj(1:3,nxe  ,nys-2:nye+2,nzs-2:nze+2)+uj(1:3,nxs-1,nys-2:nye+2,nzs-2:nze+2)
-    uj(1:3,nxs  ,nys-2:nye+2,nzs-2:nze+2) = uj(1:3,nxs  ,nys-2:nye+2,nzs-2:nze+2)+uj(1:3,nxe+1,nys-2:nye+2,nzs-2:nze+2)
-    uj(1:3,nxs+1,nys-2:nye+2,nzs-2:nze+2) = uj(1:3,nxs+1,nys-2:nye+2,nzs-2:nze+2)+uj(1:3,nxe+2,nys-2:nye+2,nzs-2:nze+2)
-!$OMP END PARALLEL WORKSHARE
-!$OMP PARALLEL WORKSHARE
-    uj(1:3,nxs-2,nys-2:nye+2,nzs-2:nze+2) = uj(1:3,nxe-1,nys-2:nye+2,nzs-2:nze+2)
-    uj(1:3,nxs-1,nys-2:nye+2,nzs-2:nze+2) = uj(1:3,nxe  ,nys-2:nye+2,nzs-2:nze+2)
-    uj(1:3,nxe+1,nys-2:nye+2,nzs-2:nze+2) = uj(1:3,nxs  ,nys-2:nye+2,nzs-2:nze+2)
-    uj(1:3,nxe+2,nys-2:nye+2,nzs-2:nze+2) = uj(1:3,nxs+1,nys-2:nye+2,nzs-2:nze+2)
-!$OMP END PARALLEL WORKSHARE
-
-  end subroutine boundary_periodic__curre
+  end subroutine boundary_reconnection__curre
 
 
-  subroutine boundary_periodic__phi(phi,nxs,nxe,nys,nye,nzs,nze,l)
+  subroutine boundary_reconnection__phi(phi,nxs,nxe,nys,nye,nzs,nze,l)
 
     integer, intent(in)    :: nxs, nxe, nys, nye, nzs, nze, l
     real(8), intent(inout) :: phi(nxs-1:nxe+1,nys-1:nye+1,nzs-1:nze+1)
@@ -1090,16 +1090,36 @@ end subroutine boundary_periodic__init
     enddo
 !$OMP END PARALLEL DO
 
-!$OMP PARALLEL WORKSHARE
-    phi(nxs-1,nys-1:nye+1,nzs-1:nze+1) = phi(nxe,nys-1:nye+1,nzs-1:nze+1)
-    phi(nxe+1,nys-1:nye+1,nzs-1:nze+1) = phi(nxs,nys-1:nye+1,nzs-1:nze+1)
-!$OMP END PARALLEL WORKSHARE
+   select case(l)
+
+    case(1)
+
+!$OMP PARALLEL DO PRIVATE(j,k)
+    do k=nzs-1,nze+1
+    do j=nys-1,nye+1
+       phi(nxs-1,j,k) = -phi(nxs,j,k)
+       phi(nxe+1,j,k) = -phi(nxe-2,j,k)
+    enddo
+    enddo
+!$OMP END PARALLEL DO
+
+    case(2,3)
+
+!$OMP PARALLEL DO PRIVATE(j,k)
+    do k=nzs-1,nze+1
+    do j=nys-1,nye+1
+       phi(nxs-1,j,k) = phi(nxs+1,j,k)
+       phi(nxe+1,j,k) = phi(nxe-1,j,k)
+    enddo
+    enddo
+!$OMP END PARALLEL DO
+
+    end select
+
+  end subroutine boundary_reconnection__phi
 
 
-  end subroutine boundary_periodic__phi
-
-
-  subroutine boundary_periodic__mom(mom)
+  subroutine boundary_reconnection__mom(mom) ! transported from periodic
 
     real(8), intent(inout) :: mom(7,nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,nsp)
     integer, parameter     :: nl = 7
@@ -1112,9 +1132,9 @@ end subroutine boundary_periodic__init
 
 !$OMP PARALLEL WORKSHARE
     mom(1:nl,nxgs,nys-1:nye+1,nzs-1:nze+1,1:nsp) = mom(1:nl,nxgs  ,nys-1:nye+1,nzs-1:nze+1,1:nsp) &
-                                                 +mom(1:nl,nxge+1,nys-1:nye+1,nzs-1:nze+1,1:nsp)
-    mom(1:nl,nxge,nys-1:nye+1,nzs-1:nze+1,1:nsp) = mom(1:nl,nxge  ,nys-1:nye+1,nzs-1:nze+1,1:nsp) &
                                                  +mom(1:nl,nxgs-1,nys-1:nye+1,nzs-1:nze+1,1:nsp)
+    mom(1:nl,nxge,nys-1:nye+1,nzs-1:nze+1,1:nsp) = mom(1:nl,nxge  ,nys-1:nye+1,nzs-1:nze+1,1:nsp) &
+                                                 +mom(1:nl,nxge+1,nys-1:nye+1,nzs-1:nze+1,1:nsp)
 !$OMP END PARALLEL WORKSHARE
 
     do isp = 1,nsp
@@ -1232,7 +1252,7 @@ end subroutine boundary_periodic__init
 !$OMP END PARALLEL DO
     enddo
 
-  end subroutine boundary_periodic__mom
+  end subroutine boundary_reconnection__mom
 
 
-end module boundary_periodic
+end module boundary_reconnection

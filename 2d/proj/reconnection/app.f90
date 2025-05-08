@@ -3,14 +3,14 @@ module app
   use mpi
   use wuming2d
   use wuming_utils
-  use boundary_periodic, &
-       & bc__init        => boundary_periodic__init,       &
-       & bc__dfield      => boundary_periodic__dfield,     &
-       & bc__particle_x  => boundary_periodic__particle_x, &
-       & bc__particle_y  => boundary_periodic__particle_y, &
-       & bc__curre       => boundary_periodic__curre,      &
-       & bc__phi         => boundary_periodic__phi,        &
-       & bc__mom         => boundary_periodic__mom
+  use boundary_reconnection, &
+       & bc__init        => boundary_reconnection__init,       &
+       & bc__dfield      => boundary_reconnection__dfield,     &
+       & bc__particle_x  => boundary_reconnection__particle_x, &
+       & bc__particle_y  => boundary_reconnection__particle_y, &
+       & bc__curre       => boundary_reconnection__curre,      &
+       & bc__phi         => boundary_reconnection__phi,        &
+       & bc__mom         => boundary_reconnection__mom
   implicit none
   private
 
@@ -42,11 +42,11 @@ module app
   integer :: n_x
   integer :: n_y
   real(8) :: mass_ratio
-  real(8) :: sigma_e
-  real(8) :: omega_pe
-  real(8) :: v_the
-  real(8) :: v_thi
-  real(8) :: t_ani
+  real(8) :: alpha
+  real(8) :: rtemp
+  real(8) :: lcs
+  integer :: nbg
+  integer :: ncs
 
   integer :: nproc
   integer :: it0
@@ -63,14 +63,14 @@ module app
   ! OTHER CONSTANTS
   real(8), parameter :: c      = 1.0D0     !SPEED OF LIGHT
   real(8), parameter :: gfac   = 0.501D0   !IMPLICITNESS FACTOR 0.501-0.505
-  real(8), parameter :: cfl    = 1.0D0     !CFL CONDITION FOR LIGHT WAVE
+  real(8), parameter :: cfl    = 0.5D0     !CFL CONDITION FOR LIGHT WAVE
   real(8), parameter :: delx   = 1.0D0     !CELL WIDTH
   real(8), parameter :: pi     = 4.0D0*atan(1.0D0)
 
   !
   ! main variables
   !
-  integer, allocatable, public :: np2(:,:), cumcnt(:,:,:)
+  integer, allocatable, public :: np2(:,:), cumcnt(:,:,:), np_harris(:,:,:)
   real(8), allocatable, public :: uf(:,:,:)
   real(8), allocatable, public :: up(:,:,:,:)
   real(8), allocatable, public :: gp(:,:,:,:)
@@ -78,7 +78,8 @@ module app
   real(8)                      :: r(nsp)
   real(8)                      :: q(nsp)
   real(8)                      :: delt
-  real(8)                      :: b0
+  real(8)                      :: b0, vte, vti
+  real(8)                      :: x0, y0
 
 contains
   !
@@ -88,11 +89,9 @@ contains
     implicit none
     integer :: it
     real(8) :: etime, etime0
-
     ! initialization
     call load_config()
     call init()
-
     ! current clock
     etime0 = get_etime()
 
@@ -100,12 +99,12 @@ contains
     do it = it0+1, max_it
        ! update
        call particle__solv(gp, up, uf, cumcnt, nxs, nxe)
+       call bc__particle_x(gp, np2, nxs, nxe)
        call field__fdtd_i(uf, up, gp, cumcnt, nxs, nxe, &
             & bc__dfield, bc__curre, bc__phi)
-       call bc__particle_x(gp, np2)
        call bc__particle_y(gp, np2)
        call sort__bucket(up, gp, cumcnt, np2, nxs, nxe)
-
+      
        ! output entire particles
        if ( mod(it, intvl_ptcl) == 0 ) then
           call io__ptcl(up, uf, np2, it)
@@ -148,10 +147,6 @@ contains
        end if
     enddo
 
-    ! save final state
-    it = max_it + 1
-    write(restart_file, '(i7.7, "_restart")') it
-    call save_restart(up, uf, np2, nxs, nxe, it, restart_file)
     call finalize()
 
   end subroutine app__main
@@ -232,21 +227,20 @@ contains
     ! read "parameter" section and initialize
     call json%get(root, 'parameter', p)
     call json%get(p, 'num_process', num_process)
-    call json%get(p, 'n_ppc', n_ppc)
     call json%get(p, 'n_x', n_x)
     call json%get(p, 'n_y', n_y)
     call json%get(p, 'mass_ratio', mass_ratio)
-    call json%get(p, 'sigma_e', sigma_e)
-    call json%get(p, 'omega_pe', omega_pe)
-    call json%get(p, 'v_the', v_the)
-    call json%get(p, 'v_thi', v_thi)
-    call json%get(p, 't_ani', t_ani)
+    call json%get(p, 'alpha', alpha)
+    call json%get(p, 'rtemp', rtemp)
+    call json%get(p, 'lcs', lcs)
+    call json%get(p, 'nbg', nbg)
+    call json%get(p, 'ncs', ncs)
 
     nproc = num_process
     nx    = n_x
     ny    = n_y
-    np    = n_ppc * nx * 5
-    n0    = n_ppc
+    n0    = nbg + ncs
+    np    = n0 * nx
     nxgs  = 2
     nxge  = nxgs + nx - 1
     nygs  = 2
@@ -265,15 +259,15 @@ contains
   !
   subroutine init()
     implicit none
-    integer :: isp, i, j
-    real(8) :: wpe, wpi, wge, wgi, vte, vti
+    integer :: isp, i, j, ii
+    real(8) :: wpe, wpi, wge, wgi, ldb
 
     ! MPI
     call mpi_set__init(nygs, nyge, nproc)
 
     ! random number
     call init_random_seed()
-
+    
     ! allocate memory and initialize everything by zero
     allocate(np2(nys:nye,nsp))
     allocate(cumcnt(nxgs:nxge+1,nys:nye,nsp))
@@ -289,44 +283,29 @@ contains
     mom    = 0
 
     ! set physical parameters
-    delt = cfl*delx/c
-    wpe  = omega_pe
-    wge  = omega_pe * sqrt(sigma_e)
-    wpi  = wpe / sqrt(mass_ratio)
-    wgi  = wge / mass_ratio
-    vte  = v_the
-    vti  = v_thi
     r(1) = mass_ratio
     r(2) = 1.0d0
+    delt = cfl*delx/c
+    ldb  = delx  ! Debye length = dx
+    vte  = sqrt(rtemp)*c/(sqrt(1+rtemp)*alpha) !from the pressure balance
+    vti  = vte*sqrt(r(2)/r(1))/sqrt(rtemp)
+    wpe  = vte/ldb/sqrt(2.d0)
+    wpi  = wpe*sqrt(r(2)/r(1))
+    wge  = wpe/alpha
+    wgi  = wge/mass_ratio
     q(1) =+sqrt(r(1) / (4*pi*n0/delx**2)) * wpi
     q(2) =-sqrt(r(2) / (4*pi*n0/delx**2)) * wpe
-    b0   = r(1)*c / q(1) * wgi
+    b0   = r(1)*c/q(1) * wgi
 
-    ! number of particles
-    np2(nys:nye,1:nsp) = n0*(nxge-nxgs+1)
-    if ( nrank == nroot ) then
-       if ( n0*(nxge-nxgs+1) > np ) then
-          write(0,*) 'Error: Too large number of particles'
-          stop
-       endif
-    endif
-
-    ! preparation of sort
-    do isp = 1, nsp
-       !$OMP PARALLEL DO PRIVATE(i,j)
-       do j = nys, nye
-          cumcnt(nxgs,j,isp) = 0
-          do i = nxgs+1, nxge+1
-             cumcnt(i,j,isp) = cumcnt(i-1,j,isp) + n0
-          enddo
-          if ( cumcnt(nxge+1,j,isp) /= np2(j,isp) ) then
-             write(0,*) 'Error: invalid values encounterd for cumcnt'
-             stop
-          endif
-       enddo
-       !$OMP END PARALLEL DO
-    enddo
-
+    ! POSITION OF THE X-POINT
+    x0  = 0.5*(nxge+nxgs)*delx
+    y0  = 0.5*(nyge-nygs)*delx
+    ! CURRENT SHEET THICKNESS
+    lcs = lcs * c/wpi
+   
+    ! NUMBER OF PARTICLES IN EACH CELL IN Y
+    np2(nys:nye,1:nsp) = nbg*(nxge-nxgs) + ncs*2*lcs
+   
     ! initialize modules
     call bc__init( &
          & ndim, np, nsp, nxgs, nxge, nygs, nyge, nys, nye, &
@@ -353,13 +332,16 @@ contains
     else
        ! output parameters and set initial condition
        call save_param(n0, wpe, wpi, wge, wgi, vti, vte, param)
+
        call set_initial_condition()
+       ! sort loaded particles
+       call sort__bucket(gp, up, cumcnt, np2, nxs, nxe)
+       ! copy
+       up = gp
+
        it0 = 0
        call energy_history(up, uf, np2, it0)
     endif
-
-    ! copy
-    gp = up
 
   end subroutine init
 
@@ -368,7 +350,7 @@ contains
   !
   subroutine finalize()
     implicit none
-
+    write (*,*) "Checkpoint!!!" 
     call io__finalize()
     call MPI_Finalize(mpierr)
 
@@ -379,57 +361,90 @@ contains
   !
   subroutine set_initial_condition()
     implicit none
-    integer :: i, j, ii, isp
-    real(8) :: v1, gam1, gamp, sd(nsp)
+    integer            :: i, j, ii, ibg, isp
+    real(8), parameter :: e1 = 0.12d0  ! B1/B0: SZ recommend ~< O(0.5*nbg/ncs).
+    real(8)            :: r1, r2
+    real(8)            :: jz, density
+    real(8)            :: b_harris, bx_pert, by_pert
+    real(8)            :: x, y
+    real(8)            :: f1, f2
+    real(8)            :: sdi, sde  ! for Box-Mullter method
+
+    ! ---------------- Utility functions ------------------
+    ! magnetic field strength
+    b_harris(x) = b0 * tanh((x-x0)/lcs)
+    ! localized perturbation
+    bx_pert(x,y) = +e1*b0 *((y-y0)/lcs) * exp(-((x-x0)**2+(y-y0)**2)/(2*lcs)**2)
+    by_pert(x,y) = -e1*b0 *((x-x0)/lcs) * exp(-((x-x0)**2+(y-y0)**2)/(2*lcs)**2)
+    ! density
+    density(x) = ncs * cosh((x-x0)/lcs)**(-2) + nbg
+    ! current jz_0 > 0, while jz_1 < 0
+    jz(x,y)    = &
+         +     b0/(4*pi*lcs) * cosh((x-x0)/lcs)**(-2) &
+         -2*e1*b0/(4*pi*lcs) * ( 1.d0-((x-x0)**2+(y-y0)**2)/(2*lcs)**2 ) * exp(-((x-x0)**2+(y-y0)**2)/(2*lcs)**2)
 
     !
     ! electromagnetic field
     !
     !$OMP PARALLEL DO PRIVATE(i,j)
     do j=nys-2,nye+2
-       do i=nxgs-2,nxge+2
-          uf(1,i,j) = 0.0D0
-          uf(2,i,j) = 0.0D0
-          uf(3,i,j) = b0
-          uf(4,i,j) = 0.0D0
-          uf(5,i,j) = 0.0D0
-          uf(6,i,j) = 0.0D0
-       enddo
+      do i=nxs-2,nxe+2
+         uf(1,i,j) = 0.0D0
+         uf(1,i,j) = uf(1,i,j) + bx_pert(i*delx,j*delx)
+         uf(2,i,j) = b_harris(i*delx)
+         uf(2,i,j) = uf(2,i,j) + by_pert(i*delx,j*delx)
+         uf(3,i,j) = 0.d0
+         uf(4,i,j) = 0.d0
+         uf(5,i,j) = 0.d0
+         uf(6,i,j) = 0.d0
+      enddo
     enddo
     !$OMP END PARALLEL DO
 
-    !
     ! particle position
     !
-    isp = 1
-    !$OMP PARALLEL DO PRIVATE(ii,j)
-    do j=nys,nye
-       do ii=1,np2(j,isp)
-          up(1,ii,j,1) = (nxgs + (nxge-nxgs+1)*(ii - 0.5d0)/np2(j,isp)) * delx
-          up(2,ii,j,1) = (j + uniform_rand()) * delx
-          up(1,ii,j,2) = up(1,ii,j,1)
-          up(2,ii,j,2) = up(2,ii,j,1)
-       enddo
-    enddo
-    !$OMP END PARALLEL DO
 
-    !
-    ! particle velocity
-    !
-    sd(1) = v_thi
-    sd(2) = v_the
-    do isp=1,nsp
-       !$OMP PARALLEL DO PRIVATE(ii,j,v1,gam1,gamp)
-       do j=nys,nye
-          do ii=1,np2(j,isp)
-             ! Maxwellian in fluid rest frame
-             up(3,ii,j,isp) = sd(isp) * normal_rand()
-             up(4,ii,j,isp) = sd(isp) * normal_rand()
-             up(5,ii,j,isp) = t_ani * sd(isp) * normal_rand()
-          enddo
-       enddo
-       !$OMP END PARALLEL DO
+    f1 =  1.d0 / ( (1.d0+rtemp) * q(1) )
+    f2 = rtemp / ( (1.d0+rtemp) * q(2) )
+    ! a factor of 1/sqrt(2) for Box-Muller method
+    sdi = vti/sqrt(2.)
+    sde = vte/sqrt(2.)
+    isp = 1
+    ibg = nbg*(nxge-nxgs-2)
+    !$OMP PARALLEL DO PRIVATE(ii,j,r1)
+    do j=nys,nye
+      ! Background density: Uniform distribution
+      do ii=1,ibg
+         up(1,ii,j,1) = (nxgs+1)*delx + uniform_rand()*delx*(nxge-nxgs-2)
+         up(1,ii,j,2) = up(1,ii,j,1)
+         up(2,ii,j,1) = dble(j)*delx + uniform_rand()*delx
+         up(2,ii,j,2) = up(2,ii,j,1)
+      enddo
+      ! Current sheet: 2nd order logistic distribution in x
+      do ii=ibg+1,np2(j,1)
+         r1 = uniform_rand()
+         r1 = (2.0*r1-1.0)*tanh(0.5*(nxge-nxgs-2)*delx/lcs)
+         up(1,ii,j,1) = lcs * 0.5d0*(log(1.d0+r1)-log(1.d0-r1)) + x0
+         up(1,ii,j,2) = up(1,ii,j,1)
+         r1 = uniform_rand()
+         up(2,ii,j,1) = dble(j)*delx + r1*delx
+         up(2,ii,j,2) = up(2,ii,j,1)
+      enddo
+
+      ! nonrelativistic Maxwellian 
+      do ii=1,np2(j,1)
+         up(3,ii,j,1) = sdi*normal_rand()
+         up(4,ii,j,1) = sdi*normal_rand()
+         up(5,ii,j,1) = sdi*normal_rand() + f1*jz(up(1,ii,j,1),up(2,ii,j,1))/density(up(1,ii,j,1))
+
+         up(3,ii,j,2) = sde*normal_rand()
+         up(4,ii,j,2) = sde*normal_rand()
+         up(5,ii,j,2) = sde*normal_rand() + f2*jz(up(1,ii,j,2),up(2,ii,j,2))/density(up(1,ii,j,2))
+      enddo
+
     enddo
+              
+    !$OMP END PARALLEL DO
 
     ! set particle IDs
     call set_particle_ids()
@@ -566,10 +581,10 @@ contains
     call file%get(root)
     call json%get(root, 'config', p)
     call json%update(p, 'restart_file', trim(restart_file), found)
-
+   
     ! write data to the disk
     call io__output(up, uf, np2, nxs, nxe, it, trim(restart_file))
-
+    write (*,*) "Checkpoint!!!"
     if ( nrank == nroot ) then
        call json%print(root, config)
     end if

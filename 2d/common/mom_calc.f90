@@ -183,7 +183,8 @@ contains
 !$OMP END PARALLEL WORKSHARE
 
     do isp=1,nsp
-!$OMP PARALLEL DO PRIVATE(ii,j,ih,jh,dx,dxm,dy,dym,gam)
+!$OMP PARALLEL DO PRIVATE(ii,j,ih,jh,dx,dxm,dy,dym,gam) &
+!$OMP REDUCTION(+:mom)
        do j=nys,nye
           do ii=1,np2(j,isp)
              ih = int(up(1,ii,j,isp)*d_delx-0.5)

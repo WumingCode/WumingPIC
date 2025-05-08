@@ -2,7 +2,7 @@
 include ../../../common.mk
 include ../../common2d.mk
 
-SRCS   = main.f90 app.f90 boundary_shock.f90
+SRCS   = main.f90 app.f90 boundary_reconnection.f90
 OBJS   = $(SRCS:%.f90=%.o)
 TARGET = main.out
 
@@ -14,4 +14,4 @@ clean :
 
 # Dependencies
 main.o: app.o
-app.o: boundary_shock.o $(WM_LIB2D)/libwuming2d_common.a $(WM_LIB)/libwuming_utils.a
+app.o: boundary_reconnection.o $(WM_LIB2D)/libwuming2d_common.a $(WM_LIB)/libwuming_utils.a

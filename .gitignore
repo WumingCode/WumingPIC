@@ -2,6 +2,8 @@
 *.ps
 *.eps
 *.png
+!cover_image.png
+!reconnection3d.png
 *.jpg
 *.pdf
 *.svg

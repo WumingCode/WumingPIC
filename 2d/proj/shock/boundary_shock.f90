@@ -642,7 +642,7 @@ contains
 
     do isp = 1,nsp
       !send to rank-1
-!$OMP PARALLEL DO PRIVATE(i,ii)
+!$OMP PARALLEL DO PRIVATE(i,ii,k)
       do i=nxgs-1,nxge+1
          ii = nk*(i-(nxgs-1))
          do k = 1, nk
@@ -656,7 +656,7 @@ contains
                         ncomw,nstat,nerr)
 
 !$OMP PARALLEL
-!$OMP DO PRIVATE(i,ii)
+!$OMP DO PRIVATE(i,ii,k)
       do i=nxgs-1,nxge+1
          ii = nk*(i-(nxgs-1))
          do k = 1, nk
@@ -666,7 +666,7 @@ contains
 !$OMP END DO NOWAIT
 
       !send to rank+1
-!$OMP DO PRIVATE(i,ii)
+!$OMP DO PRIVATE(i,ii,k)
       do i=nxgs-1,nxge+1
          ii = nk*(i-(nxgs-1))
          do k = 1, nk
@@ -680,7 +680,7 @@ contains
                         bff_rcv(1),nk*(nxge-nxgs+3),mnpr,ndown,201, &
                         ncomw,nstat,nerr)
 
-!$OMP PARALLEL DO PRIVATE(i,ii)
+!$OMP PARALLEL DO PRIVATE(i,ii,k)
       do i=nxgs-1,nxge+1
          ii = nk*(i-(nxgs-1))
          do k = 1, nk

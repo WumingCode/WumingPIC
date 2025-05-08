@@ -4,7 +4,7 @@ include common.mk
 SUBDIRS = utils 2d 3d
 LIBS    = $(WM_LIB)/libwuming_utils.a
 
-default: $(LIBS)
+default: $(LIBS) 2d 3d
 
 $(LIBS):
 	$(MAKE) -C utils

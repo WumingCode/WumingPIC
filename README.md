@@ -1,5 +1,9 @@
-# Wuming PIC2D
-Two-dimentional, special relativistic, electromagnetic particle-in-cell simulation code for general puposes in space and astrophysical plasmas.
+# Wuming PIC
+<!--[![DOI](https://zenodo.org/badge/377835665.svg)](https://zenodo.org/badge/latestdoi/377835665)-->
+
+Two- and Three-dimentional, special relativistic, electromagnetic particle-in-cell simulation code for general puposes in space and astrophysical plasmas.
+
+![cover](/cover_image.png)
 
 ## Features
 * Solves the Vlasov-Maxwell equations by the particle-in-cell method
@@ -8,14 +12,14 @@ Two-dimentional, special relativistic, electromagnetic particle-in-cell simulati
 * Esirkepov's charge conservation scheme for the current deposit with the 2nd-order shape function (Esirkepov, CPC, 2001)
 * Written in Fortran 90/95
 * Hybrid parallelization by MPI and OpenMP
-   - 1D domain decomposition in the x direction
+   - 1D/2D domain decomposition in the y-/y-z- directions.
 * SIMD optimization and efficient cache usage
 * MPI-IO raw data output with JSON-based metadata
 * Python scripts for HDF5 format convertor and quicklook
 
 ## Requirements
 * Fortran compiler
-  - We prepare setting files for Makefile for different compilers, including Intel Fortran, GCC-Fortran, Fujitsu compiler
+  - We prepare setting files for Makefile for different compilers, including Cray compiler, Fujitsu compiler, GCC-Fortran, Intel Fortran
   - Because of the requirement of JSON-Fortran library used in this code (https://github.com/jacobwilliams/json-fortran), **GCC-Fortran's version must be greater than 4.9**.
 
 * MPI library
@@ -25,23 +29,44 @@ Two-dimentional, special relativistic, electromagnetic particle-in-cell simulati
 * Python [OPTIONAL]
   - The code generates raw binary data and corresponding JSON-based metadata files. A Python script in each physics directory converts them to HDF5 files as a post process
   - A sample python script is prepared for quick look of the results
+  - [Here](pyvista_demo.md) is a demonstration of the 3D visualization using **PyVista** library
 
 ## Installation
 ```bash
-$ git clone git@github.com:WumingCode/WumingPIC2D.git
+$ git clone git@github.com:WumingCode/WumingPIC.git
 ```
 
 ## Code structure
 ``` 
-WumingPIC2D
+WumingPIC/
+├── 2d
+│   ├── common
+│   ├── include
+│   ├── lib
+│   └── proj
+│       ├── reconnection
+│       ├── shock
+│       └── weibel
+├── 3d
+│   ├── common
+│   ├── include
+│   ├── lib
+│   └── proj
+│       ├── reconnection
+│       ├── shock
+│       └── weibel
+│
+├── CITATION.cff
+│
+├── LICENSE.txt
+│
 ├── Makefile
 │
 ├── README.md
 │
-├── common
-│   └── common files of PIC algorithms
-│
 ├── common.mk
+│
+├── compiler-cray.mk
 │
 ├── compiler-fujitsu.mk
 │
@@ -50,64 +75,83 @@ WumingPIC2D
 ├── compiler-intel.mk
 │
 ├── include
+│   └── directory for module files
+├── lib
+│   └── directory for common library
+├── python
+│   ├── json2hdf5.py - A python script to convert JSON files to HDF5 metadata
+│   └── jsoncheck.py - For checking reading json files
+└── utils - some utility files for I/O functions
+    ├── iocore
+    └── json
+```
+In each 2d or 3d code, files are organized as follows
+
+```
+{2d,3d}
+├── Makefile
+│
+├── common
+│   └── common files of PIC algorithms
+│
+├── common{2d,3d}.mk
+│
+├── include
 │   └── directory for module files
 │
 ├── lib
 │   └── directory for common library
 │
-├── proj
-│   ├── shock
-│   │   └── collsion-less shock simulation setup files and scripts for post process
-│   └── weibel
-│       └── Weibel instability simulation setup files and scripts for post process
-│
-├── python
-│   └── json2hdf5.py - A python script to convert JSON files to HDF5 metadata
-│
-└── utils
-    └── utility files for MPI-IO and JSON output
+└── proj
+    ├── shock
+    │   └── collsion-less shock simulation setup files and scripts for post process
+    ├── weibel
+    │   └── Weibel instability simulation setup files and scripts for post process
+    └── reconnection
+        └── magnetic reconnection simulation setup files and scripts for post process
 ```
 
 ## Preparation
-1. Move to the installed directory.  
+1. Move to the installed directory.
 
    ```bash
-   $ cd ./WumingPIC2D
+   $ cd ./WumingPIC
    ```
 
-2. Copy one of `comiler-*.mk` files depending on your compiler environment to `compiler.mk`.  
+2. Copy one of `comiler-*.mk` files depending on your compiler environment to `compiler.mk`.
    For instance, copy `compiler-gcc.mk` if you are using gfortran.
 
    ```bash
    $ cp compiler-gcc.mk compiler.mk
    ```
 
-3. Make a common library.  
+3. Make common libraries.
    Compile via
 
    ```bash
    $ make
    ```
 
-   and make sure `libwuming*.a` are genererated in the library directory `lib/`.  
+   and make sure `libwuming*.a` are genererated in the library directories of `lib/` and `{2d,3d}/lib/`.
    You are now ready for executing a specific physics problem.
 
 ## Physics Problems
 
 Following physics problem setups are available at present.
-* [Weibel instability](proj/weibel/README.md)
-* [Collision-less shock](proj/shock/README.md)
+* Weibel instability ([2d](2d/proj/weibel/README.md), [3d](3d/proj/weibel/README.md))
+* Collision-less shock ([2d](2d/proj/shock/README.md), [3d](3d/proj/shock/README.md))
+* Magnetic reconnection ([2d](2d/proj/reconnection/README.md), [3d](3d/proj/reconnection/README.md))
 
 ### How to run
-Go to one of the physics problem directories `proj/*` and make an executable `main.out`.  
+Go to one of the physics problem directories `{2d,3d}/proj/*` and make an executable `main.out`.
 For instance,
 
 ```bash
-$ cd proj/weibel
+$ cd 2d/proj/weibel
 $ make
 ```
 
-will create an executable for Weibel instability. This will read parameters from a configuration file in JSON format. You may copy a sample configuration file `config_sample.json` to `config.json`:
+will create an executable for 2D Weibel instability. This will read parameters from a configuration file in JSON format. You may copy a sample configuration file `config_sample.json` to `config.json`:
 
 ```bash
 $ cp config_sample.json config.json
@@ -119,7 +163,7 @@ and edit it as you like. By default, running the code via
 $ mpiexec -np 4 ./main.out
 ```
 
-will try to read `config.json`.  
+will try to read `config.json`.
 
 If you want, you may explicitly specify the filename with a command line argument:
 
@@ -168,7 +212,7 @@ via a script `json2hdf5.py` which is located in `python/` directory.
 For instance in the working directory,
 
 ```bash
-$ python ../../python/json2hdf5.py *.json
+$ python ../../../python/json2hdf5.py *.json
 ```
 
 will process all JSON files in the current directory and generate HDF5 format
@@ -202,9 +246,14 @@ then the previous snapshot data will be read automatically.
 Join Slack workspace via https://join.slack.com/t/wumingpic/shared_invite/zt-xlm8cixg-NOV33dyorO1Whc4~FcVJ0g .
 
 ## Credits
-WumingPIC2D code uses 
+WumingPIC code uses 
 * [JSON-Fortran](https://github.com/jacobwilliams/json-fortran) API for reading/writing JSON files from Fortran.
 * [Amano's MPI-IO, JSON, HDF5 utitlity files](https://github.com/amanotk)
 
 ## License
-WumingPIC2D code is distributed under [the MIT license](LICENSE.txt).
+WumingPIC code is distributed under [the MIT license](LICENSE.txt).
+
+## Cite as
+<!--[![DOI](https://zenodo.org/badge/377835665.svg)](https://zenodo.org/badge/latestdoi/377835665)-->
+
+Cite https://zenodo.org/doi/10.5281/zenodo.10990575, which represents all versions and will always resolve to the latest release.

@@ -327,14 +327,16 @@ contains
     vti  = v_thi
     r(1) = mass_ratio
     r(2) = 1.0d0
-    q(1) =+sqrt(gam0*r(1) / (4*pi*n0)) * wpi
-    q(2) =-sqrt(gam0*r(2) / (4*pi*n0)) * wpe
+    q(1) =+sqrt(gam0*r(1) / (4*pi*n0/delx**2)) * wpi
+    q(2) =-sqrt(gam0*r(2) / (4*pi*n0/delx**2)) * wpe
     b0   = r(1)*c / q(1) * wgi * gam0
 
     ! number of particles
+!$OMP PARALLEL WORKSHARE    
     np2(nys:nye,1:nsp) = n0*(nxe-nxs-1)
+!$OMP END PARALLEL WORKSHARE
     if ( nrank == nroot ) then
-       if ( n0*(nxge-nxgs) > np ) then
+       if ( n0*(nxge-nxgs-1) > np ) then
           write(0,*) 'Error: Too large number of particles'
           stop
        endif
@@ -830,10 +832,10 @@ contains
     end do
 
     do isp = 1, nsp
-       !$OMP WORKSHARE
+       !$OMP PARALLEL WORKSHARE
        np2(nys:nye,isp)        = np2(nys:nye,isp)        + nlinj_grid(nys:nye)
        cumcnt(nxe,nys:nye,isp) = cumcnt(nxe,nys:nye,isp) + nlinj_grid(nys:nye)
-       !$OMP END WORKSHARE
+       !$OMP END PARALLEL WORKSHARE
     enddo
 
     !$OMP PARALLEL DO PRIVATE(j)

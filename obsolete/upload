@@ -1,4 +1,0 @@
-#!/bin/tcsh
-
-rsync --progress -auvz *.f90 `echo $argv[1]`:simulation/PIC3D/src/shock/
-

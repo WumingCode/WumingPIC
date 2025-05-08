@@ -744,14 +744,14 @@ contains
     call mpiio_write_collective(fh, disp, nd, gshape, lshape, offset, mpibuf1)
 
     ! velocity
-!$OMP WORKSHARE
+!$OMP PARALLEL WORKSHARE
     mom(2,nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:nsp) = mom(2,nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:nsp) &
                                                         /mom(1,nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:nsp)
     mom(3,nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:nsp) = mom(3,nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:nsp) &
                                                         /mom(1,nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:nsp)
     mom(4,nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:nsp) = mom(4,nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:nsp) &
                                                         /mom(1,nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:nsp)
-!$OMP END WORKSHARE
+!$OMP END PARALLEL WORKSHARE
 
     nd     = 5
     lshape = (/3, nxg, nyl, nzl ,nsp/)
@@ -767,14 +767,14 @@ contains
     call mpiio_write_collective(fh, disp, nd, gshape, lshape, offset, mpibuf1)
 
     ! temperature
-!$OMP WORKSHARE
+!$OMP PARALLEL WORKSHARE
     mom(5,nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:nsp) = mom(5,nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:nsp) &
                                                         /mom(1,nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:nsp)
     mom(6,nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:nsp) = mom(6,nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:nsp) &
                                                         /mom(1,nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:nsp)
     mom(7,nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:nsp) = mom(7,nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:nsp) &
                                                         /mom(1,nxgs-1:nxge+1,nys-1:nye+1,nzs-1:nze+1,1:nsp)
-!$OMP END WORKSHARE
+!$OMP END PARALLEL WORKSHARE
 
 
     nd     = 5

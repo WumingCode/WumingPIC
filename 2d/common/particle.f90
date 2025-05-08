@@ -169,9 +169,9 @@ contains
 !$OMP END PARALLEL DO
 
     if(ndim == 6)then
-!$OMP WORKSHARE
+!$OMP PARALLEL WORKSHARE
       gp(6,:,:,:) = up(6,:,:,:)
-!$OMP END WORKSHARE
+!$OMP END PARALLEL WORKSHARE
     endif
 
   end subroutine particle__solv

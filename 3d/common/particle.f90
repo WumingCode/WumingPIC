@@ -223,9 +223,9 @@ contains
 !$OMP END PARALLEL DO
 
     if (ndim == 7) then
-!$OMP WORKSHARE
+!$OMP PARALLEL WORKSHARE
     gp(7,:,:,:,:) = up(7,:,:,:,:)
-!$OMP END WORKSHARE
+!$OMP END PARALLEL WORKSHARE
     endif
 
   end subroutine particle__solv

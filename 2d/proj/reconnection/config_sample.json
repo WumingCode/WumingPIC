@@ -1,0 +1,22 @@
+{
+  "config": {
+    "verbose": 0,
+    "datadir": "./",
+    "max_elapsed": 18000,
+    "max_it": 20000,
+    "intvl_ptcl": 5000,
+    "intvl_mom": 5000,
+    "intvl_orb": 50000
+  },
+  "parameter": {
+    "num_process": 8,
+    "n_x": 321,
+    "n_y": 640,
+    "mass_ratio": 0.16E+2,
+    "alpha": 2.0E+0,
+    "rtemp": 0.20000000000000001E+0,
+    "lcs": 0.5E+0,
+    "nbg": 50,
+    "ncs": 250
+  }
+}
