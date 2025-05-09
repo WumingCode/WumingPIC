@@ -1,5 +1,5 @@
 # Wuming PIC
-<!--[![DOI](https://zenodo.org/badge/377835665.svg)](https://zenodo.org/badge/latestdoi/377835665)-->
+[![DOI](https://zenodo.org/badge/377837895.svg)](https://zenodo.org/badge/latestdoi/377837895)
 
 Two- and Three-dimentional, special relativistic, electromagnetic particle-in-cell simulation code for general puposes in space and astrophysical plasmas.
 
@@ -254,6 +254,6 @@ WumingPIC code uses
 WumingPIC code is distributed under [the MIT license](LICENSE.txt).
 
 ## Cite as
-<!--[![DOI](https://zenodo.org/badge/377835665.svg)](https://zenodo.org/badge/latestdoi/377835665)-->
+[DOI](https://zenodo.org/badge/377837895.svg)](https://zenodo.org/badge/latestdoi/377837895)
 
-Cite https://zenodo.org/doi/10.5281/zenodo.10990575, which represents all versions and will always resolve to the latest release.
+Cite https://doi.org/10.5281/zenodo.15369572, which represents all versions and will always resolve to the latest release.
