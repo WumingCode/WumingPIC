@@ -254,6 +254,6 @@ WumingPIC code uses
 WumingPIC code is distributed under [the MIT license](LICENSE.txt).
 
 ## Cite as
-[DOI](https://zenodo.org/badge/377837895.svg)](https://zenodo.org/badge/latestdoi/377837895)
+[![DOI](https://zenodo.org/badge/377837895.svg)](https://zenodo.org/badge/latestdoi/377837895)
 
 Cite https://doi.org/10.5281/zenodo.15369572, which represents all versions and will always resolve to the latest release.
