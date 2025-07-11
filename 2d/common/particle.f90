@@ -153,9 +153,9 @@ contains
              gp(5,ii,j,isp) = uvm3+fac1*epz
 
              !move
-             gam = 1./dsqrt(1.0+(+gp(3,ii,j,isp)*gp(3,ii,j,isp) &
-                                  +gp(4,ii,j,isp)*gp(4,ii,j,isp) &
-                                  +gp(5,ii,j,isp)*gp(5,ii,j,isp))/(c*c))
+             gam = 1d0/sqrt(1d0+(+gp(3,ii,j,isp)*gp(3,ii,j,isp) &
+                                 +gp(4,ii,j,isp)*gp(4,ii,j,isp) &
+                                 +gp(5,ii,j,isp)*gp(5,ii,j,isp))/(c*c))
 
              gp(1,ii,j,isp) = up(1,ii,j,isp)+gp(3,ii,j,isp)*delt*gam
              gp(2,ii,j,isp) = up(2,ii,j,isp)+gp(4,ii,j,isp)*delt*gam
@@ -292,10 +292,7 @@ contains
              !---
 
              !move
-             gam = 1./dsqrt(1.0+(+gp(3,ii,j,isp)*gp(3,ii,j,isp) &
-                                  +gp(4,ii,j,isp)*gp(4,ii,j,isp) &
-                                  +gp(5,ii,j,isp)*gp(5,ii,j,isp))/(c*c))
-
+             gam = 1d0/gam
              gp(1,ii,j,isp) = up(1,ii,j,isp)+gp(3,ii,j,isp)*delt*gam
              gp(2,ii,j,isp) = up(2,ii,j,isp)+gp(4,ii,j,isp)*delt*gam
 

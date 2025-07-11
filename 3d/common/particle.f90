@@ -395,10 +395,7 @@ contains
             gp(6,ii,j,k,isp) = txxx*(gam2*uvm6+c*ua*tauz+gam*(uvm4*tauy-uvm5*taux))
 
             !move
-            gam = 1d0/sqrt(1d0+(+gp(4,ii,j,k,isp)*gp(4,ii,j,k,isp) &
-                                +gp(5,ii,j,k,isp)*gp(5,ii,j,k,isp) &
-                                +gp(6,ii,j,k,isp)*gp(6,ii,j,k,isp))/(c*c))
-
+            gam = 1d0/gam
             gp(1,ii,j,k,isp) = up(1,ii,j,k,isp)+gp(4,ii,j,k,isp)*delt*gam
             gp(2,ii,j,k,isp) = up(2,ii,j,k,isp)+gp(5,ii,j,k,isp)*delt*gam
             gp(3,ii,j,k,isp) = up(3,ii,j,k,isp)+gp(6,ii,j,k,isp)*delt*gam
