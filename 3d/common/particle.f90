@@ -50,7 +50,9 @@ contains
 
 
   subroutine particle__solv(gp,up,uf,cumcnt,nxs,nxe)
-
+    ! 
+    ! Buneman-Boris method [cf. Boris, Proc. Fourth Conf. Num. Sim. Plasmas, 1970]
+    ! 
     integer, intent(in)  :: nxs, nxe
     integer, intent(in)  :: cumcnt(nxgs:nxge+1,nys:nye,nzs:nze,nsp)
     real(8), intent(in)  :: up(ndim,np,nys:nye,nzs:nze,nsp)
