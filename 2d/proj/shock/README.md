@@ -10,15 +10,15 @@ in the top directory, following parameters can be specified.
 - `parameter` :
   - `num_process`  
      Number of MPI processes. This must be the same as the number specified  
-     in execusion with `mpiexec` or `mpirun`.
+     in execution with `mpiexec` or `mpirun`.
   - `n_ppc`  
-     Number of particle per cell in the upstream region.
+     Number of particles per cell in the upstream region.
   - `n_x`  
-     Number of grid in x direction.
+     Number of grids in x direction.
   - `n_y`  
-     Number of grid in y direction.
+     Number of grids in y direction.
   - `n_x_ini`  
-     Initial number of grid in x direction. The simulation box will expand  
+     Initial number of grids in x direction. The simulation box will expand  
      every `intvl_expand` step.
   - `u_injection`  
      Injection four-velocity from the boundary.
@@ -29,9 +29,9 @@ in the top directory, following parameters can be specified.
   - `omega_pe`  
      Proper plasma frequency in the upstream.
   - `v_thi`  
-     Thermal velocity of ions in the upsteram.
+     Thermal velocity of ions in the upstream.
   - `v_the`  
-     Thermal velocity of electrons in the upsteram.
+     Thermal velocity of electrons in the upstream.
   - `theta_bn`  
      Magnetic obliquity in the upstream or the shock angle in degrees.
   - `phi_bn`  

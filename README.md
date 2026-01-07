@@ -1,7 +1,7 @@
 # Wuming PIC
 [![DOI](https://zenodo.org/badge/377837895.svg)](https://zenodo.org/badge/latestdoi/377837895)
 
-Two- and Three-dimentional, special relativistic, electromagnetic particle-in-cell simulation code for general puposes in space and astrophysical plasmas.
+Two- and Three-dimensional, special relativistic, electromagnetic particle-in-cell simulation code for general purposes in space and astrophysical plasmas.
 
 ![cover](/cover_image.png)
 
@@ -104,7 +104,7 @@ In each 2d or 3d code, files are organized as follows
 │
 └── proj
     ├── shock
-    │   └── collsion-less shock simulation setup files and scripts for post process
+    │   └── collision-less shock simulation setup files and scripts for post process
     ├── weibel
     │   └── Weibel instability simulation setup files and scripts for post process
     └── reconnection
@@ -132,7 +132,7 @@ In each 2d or 3d code, files are organized as follows
    $ make
    ```
 
-   and make sure `libwuming*.a` are genererated in the library directories of `lib/` and `{2d,3d}/lib/`.
+   and make sure `libwuming*.a` are generated in the library directories of `lib/` and `{2d,3d}/lib/`.
    You are now ready for executing a specific physics problem.
 
 ## Physics Problems
@@ -189,11 +189,11 @@ Configuration parameters that are common for all physics problems are as follows
   - `intvl_ptcl`  
      Interval of time step for entire particle data output.
   - `intvl_mom`  
-     Interval of time step for for moment data output.
+     Interval of time step for moment data output.
   - `intvl_orb`  
      Interval of time step for tracer particle data output.
   - `restart_file`  
-     Snapshot file to be read during initialzation. If this is specified,  
+     Snapshot file to be read during initialization. If this is specified,  
      the code will start from this state. Otherwise, it will start from the  
      initial condition. Note that this parameter will be overwritten by the  
      code automatically when it finishes.
@@ -248,7 +248,7 @@ Join Slack workspace via https://join.slack.com/t/wumingpic/shared_invite/zt-xlm
 ## Credits
 WumingPIC code uses 
 * [JSON-Fortran](https://github.com/jacobwilliams/json-fortran) API for reading/writing JSON files from Fortran.
-* [Amano's MPI-IO, JSON, HDF5 utitlity files](https://github.com/amanotk)
+* [Amano's MPI-IO, JSON, HDF5 utility files](https://github.com/amanotk)
 
 ## License
 WumingPIC code is distributed under [the MIT license](LICENSE.txt).
