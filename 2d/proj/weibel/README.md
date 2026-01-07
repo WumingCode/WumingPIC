@@ -7,13 +7,13 @@ in the top directory, following parameters can be specified.
 - `parameter` :
   - `num_process`  
      Number of MPI processes. This must be the same as the number specified  
-     in execusion with `mpiexec` or `mpirun`.
+     in execution with `mpiexec` or `mpirun`.
   - `n_ppc`  
-     Number of particle per cell.
+     Number of particles per cell.
   - `n_x`  
-     Number of grid in x direction.
+     Number of grids in x direction.
   - `n_y`  
-     Number of grid in y direction.
+     Number of grids in y direction.
   - `mass_ratio`  
      Ion to electron mass ratio: m_i/m_e.
   - `sigma_e`  
