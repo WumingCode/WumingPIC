@@ -143,7 +143,7 @@ contains
        endif
 
        if( verbose >= 1 .and. nrank == nroot ) then
-          write(*,'("*** Time step: ", i7, " completed in ", e10.2, " sec.")') &
+          write(*,'("*** Time step: ", i7, " completed in ", es10.2, " sec.")') &
                & it, etime
        end if
     enddo
@@ -537,7 +537,7 @@ contains
     if( nrank == 0 ) then
        ! time, particle1, particle2, efield, bfield, total
        energy_g(nsp+3) = sum(energy_g(1:nsp+2))
-       write(unit, fmt='(f8.2, 4(1x, e12.5))') it*delt, &
+       write(unit, fmt='(f8.2, 4(1x, es12.5))') it*delt, &
             & sum(energy_g(1:nsp)), energy_g(nsp+1), energy_g(nsp+2), energy_g(nsp+3)
        close(unit)
     endif
@@ -560,7 +560,7 @@ contains
     type(json_file) :: file
     type(json_value), pointer :: root, p
 
-    call json%initialize()
+    call json%initialize(real_format = 'ES')
     call file%initialize()
     call file%deserialize(config_string)
     call file%get(root)
