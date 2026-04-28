@@ -135,7 +135,7 @@ contains
       endif
 
       if(verbose>= 1 .and. nrank==0) then
-        write(*,'("*** Time step: ", i7, " completed in ", e10.2, " sec.")')it, etime
+        write(*,'("*** Time step: ", i7, " completed in ", es10.2, " sec.")')it, etime
       endif
     enddo
 
