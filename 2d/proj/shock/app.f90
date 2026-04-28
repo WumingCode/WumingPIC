@@ -160,7 +160,7 @@ contains
        endif
 
        if( verbose >= 1 .and. nrank == nroot ) then
-          write(*,'("*** Time step: ", i7, " completed in ", e10.2, " sec.")') &
+          write(*,'("*** Time step: ", i7, " completed in ", es10.2, " sec.")') &
                & it, etime
        end if
     enddo
@@ -542,7 +542,7 @@ contains
     type(json_file) :: file
     type(json_value), pointer :: root, p
 
-    call json%initialize()
+    call json%initialize(real_format = 'ES')
     call file%initialize()
     call file%deserialize(config_string)
     call file%get(root)
