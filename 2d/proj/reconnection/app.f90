@@ -303,7 +303,7 @@ contains
 
     ! POSITION OF THE X-POINT
     x0  = 0.5*(nxge+nxgs)*delx
-    y0  = 0.5*(nyge-nygs)*delx
+    y0  = 0.5*(nyge+nygs)*delx
     ! CURRENT SHEET THICKNESS
     lcs = lcs * c/wpi
    

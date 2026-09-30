@@ -23,7 +23,7 @@ in the top directory, following parameters can be specified.
   - `alpha`  
      Ratio of the electron plasma-to-cyclotron frequency.
   - `rtemp`  
-     Ion-to-Electron temperature ratio.
+     Electron-to-ion temperature ratio: T_e/T_i.
   - `lcs`  
      Current sheet thickness in the unit of the ion inertia length
   - `nbg`  
