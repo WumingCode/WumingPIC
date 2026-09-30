@@ -677,6 +677,7 @@ contains
        df(2:4,nxs-1,j,k) =  df(2:4,nxs+1,j,k)
        df(5:6,nxs-1,j,k) = -df(5:6,nxs,  j,k)
        df(1,  nxe  ,j,k) = -df(1,  nxe-1,j,k)
+       df(1,  nxe+1,j,k) = -df(1,  nxe-2,j,k)
        df(2:4,nxe+1,j,k) =  df(2:4,nxe-1,j,k)
        df(5:6,nxe  ,j,k) = -df(5:6,nxe-1,j,k)
     enddo
@@ -971,6 +972,15 @@ contains
       uj(1,i,j,nzs-1) = bff_rcv_k(ii+1)
       uj(2,i,j,nzs-1) = bff_rcv_k(ii+2)
       uj(3,i,j,nzs-1) = bff_rcv_k(ii+3)
+    enddo
+    enddo
+!$OMP END PARALLEL DO
+
+!$OMP PARALLEL DO PRIVATE(j,k)
+    do k=nzs-2,nze+2
+    do j=nys-2,nye+2
+       uj(2:3,nxs-1,j,k) = -uj(2:3,nxs,  j,k)
+       uj(2:3,nxe  ,j,k) = -uj(2:3,nxe-1,j,k)
     enddo
     enddo
 !$OMP END PARALLEL DO
