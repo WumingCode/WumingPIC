@@ -151,7 +151,7 @@ contains
     enddo
 
     ! save final state
-    it = max_it + 1
+    it = max(it0, max_it)
     write(restart_file, '(i7.7, "_restart")') it
     call save_restart(up, uf, np2, nxs, nxe, it, restart_file)
     call finalize()
