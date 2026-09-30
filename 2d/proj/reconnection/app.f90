@@ -243,7 +243,7 @@ contains
     nproc = num_process
     nx    = n_x
     ny    = n_y
-    n0    = nbg + ncs
+    n0    = ncs
     np    = n0 * nx
     nxgs  = 2
     nxge  = nxgs + nx - 1
@@ -381,10 +381,10 @@ contains
     by_pert(x,y) = -e1*b0 *((x-x0)/lcs) * exp(-((x-x0)**2+(y-y0)**2)/(2*lcs)**2)
     ! density
     density(x) = ncs * cosh((x-x0)/lcs)**(-2) + nbg
-    ! current jz_0 > 0, while jz_1 < 0
+    ! current from Ampere's law jz = c/(4*pi)*(rot B)_z: jz_0 > 0, while jz_1 < 0
     jz(x,y)    = &
-         +     b0/(4*pi*lcs) * cosh((x-x0)/lcs)**(-2) &
-         -2*e1*b0/(4*pi*lcs) * ( 1.d0-((x-x0)**2+(y-y0)**2)/(2*lcs)**2 ) * exp(-((x-x0)**2+(y-y0)**2)/(2*lcs)**2)
+         +     c*b0/(4*pi*lcs) * cosh((x-x0)/lcs)**(-2) &
+         -2*e1*c*b0/(4*pi*lcs) * ( 1.d0-((x-x0)**2+(y-y0)**2)/(2*lcs)**2 ) * exp(-((x-x0)**2+(y-y0)**2)/(2*lcs)**2)
 
     !
     ! electromagnetic field
