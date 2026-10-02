@@ -21,9 +21,9 @@ in the top directory, following parameters can be specified.
   - `mass_ratio`  
      Ion to electron mass ratio: m_i/m_e.
   - `alpha`  
-     Ratio of the electron plasma-to-cyclotron frequency.
+     Ratio of the electron plasma-to-cyclotron frequency: w_pe/w_ge.
   - `rtemp`  
-     Ion-to-Electron temperature ratio.
+     Electron-to-ion temperature ratio: T_e/T_i.
   - `lcs`  
      Current sheet thickness in the unit of the ion inertia length
   - `nbg`  

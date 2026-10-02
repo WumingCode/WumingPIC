@@ -353,6 +353,7 @@ contains
        df(2:4,nxs-1,j) =  df(2:4,nxs+1,j)
        df(5:6,nxs-1,j) = -df(5:6,nxs,  j)
        df(1,  nxe  ,j) = -df(1,  nxe-1,j)
+       df(1,  nxe+1,j) = -df(1,  nxe-2,j)
        df(2:4,nxe+1,j) =  df(2:4,nxe-1,j)
        df(5:6,nxe  ,j) = -df(5:6,nxe-1,j)
     enddo
@@ -365,7 +366,7 @@ contains
 
     integer, intent(in)    :: nxs, nxe, nys, nye, nxgs, nxge
     real(8), intent(inout) :: uj(3,nxgs-2:nxge+2,nys-2:nye+2)
-    integer                :: i, ii
+    integer                :: i, j, ii
     real(8)                :: bff_rcv(6*(nxe-nxs+4+1)), bff_snd(6*(nxe-nxs+4+1))
 
     if(.not.is_init)then
@@ -496,6 +497,13 @@ contains
        uj(1,i,nys-1) = bff_rcv(ii+4)
        uj(2,i,nys-1) = bff_rcv(ii+5)
        uj(3,i,nys-1) = bff_rcv(ii+6)
+    enddo
+!$OMP END PARALLEL DO
+
+!$OMP PARALLEL DO PRIVATE(j)
+    do j=nys-2,nye+2
+       uj(2:3,nxs-1,j) = -uj(2:3,nxs,  j)
+       uj(2:3,nxe  ,j) = -uj(2:3,nxe-1,j)
     enddo
 !$OMP END PARALLEL DO
 

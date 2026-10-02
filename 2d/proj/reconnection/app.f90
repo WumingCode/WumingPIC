@@ -65,6 +65,7 @@ module app
   real(8), parameter :: gfac   = 0.501D0   !IMPLICITNESS FACTOR 0.501-0.505
   real(8), parameter :: cfl    = 0.5D0     !CFL CONDITION FOR LIGHT WAVE
   real(8), parameter :: delx   = 1.0D0     !CELL WIDTH
+  real(8), parameter :: np_margin = 3.0D0  !MARGIN OF PARTICLE ARRAY SIZE
   real(8), parameter :: pi     = 4.0D0*atan(1.0D0)
 
   !
@@ -142,11 +143,15 @@ contains
        endif
 
        if( verbose >= 1 .and. nrank == nroot ) then
-          write(*,'("*** Time step: ", i7, " completed in ", e10.2, " sec.")') &
+          write(*,'("*** Time step: ", i7, " completed in ", es10.2, " sec.")') &
                & it, etime
        end if
     enddo
 
+    ! save final state
+    it = max(it0, max_it)
+    write(restart_file, '(i7.7, "_restart")') it
+    call save_restart(up, uf, np2, nxs, nxe, it, restart_file)
     call finalize()
 
   end subroutine app__main
@@ -239,8 +244,7 @@ contains
     nproc = num_process
     nx    = n_x
     ny    = n_y
-    n0    = nbg + ncs
-    np    = n0 * nx
+    n0    = ncs
     nxgs  = 2
     nxge  = nxgs + nx - 1
     nygs  = 2
@@ -267,20 +271,6 @@ contains
 
     ! random number
     call init_random_seed()
-    
-    ! allocate memory and initialize everything by zero
-    allocate(np2(nys:nye,nsp))
-    allocate(cumcnt(nxgs:nxge+1,nys:nye,nsp))
-    allocate(uf(6,nxgs-2:nxge+2,nys-2:nye+2))
-    allocate(up(ndim,np,nys:nye,nsp))
-    allocate(gp(ndim,np,nys:nye,nsp))
-    allocate(mom(1:7,nxgs-1:nxge+1,nys-1:nye+1,1:nsp))
-    np2    = 0
-    cumcnt = 0
-    uf     = 0
-    up     = 0
-    gp     = 0
-    mom    = 0
 
     ! set physical parameters
     r(1) = mass_ratio
@@ -299,10 +289,27 @@ contains
 
     ! POSITION OF THE X-POINT
     x0  = 0.5*(nxge+nxgs)*delx
-    y0  = 0.5*(nyge-nygs)*delx
+    y0  = 0.5*(nyge+nygs)*delx
     ! CURRENT SHEET THICKNESS
     lcs = lcs * c/wpi
-   
+
+    ! MAXIMUM NUMBER OF PARTICLES IN EACH CELL IN Y, WITH A MARGIN
+    np = int(np_margin * (nbg*(nxge-nxgs) + ncs*2*lcs))
+
+    ! allocate memory and initialize everything by zero
+    allocate(np2(nys:nye,nsp))
+    allocate(cumcnt(nxgs:nxge+1,nys:nye,nsp))
+    allocate(uf(6,nxgs-2:nxge+2,nys-2:nye+2))
+    allocate(up(ndim,np,nys:nye,nsp))
+    allocate(gp(ndim,np,nys:nye,nsp))
+    allocate(mom(1:7,nxgs-1:nxge+1,nys-1:nye+1,1:nsp))
+    np2    = 0
+    cumcnt = 0
+    uf     = 0
+    up     = 0
+    gp     = 0
+    mom    = 0
+
     ! NUMBER OF PARTICLES IN EACH CELL IN Y
     np2(nys:nye,1:nsp) = nbg*(nxge-nxgs) + ncs*2*lcs
    
@@ -350,7 +357,6 @@ contains
   !
   subroutine finalize()
     implicit none
-    write (*,*) "Checkpoint!!!" 
     call io__finalize()
     call MPI_Finalize(mpierr)
 
@@ -378,10 +384,10 @@ contains
     by_pert(x,y) = -e1*b0 *((x-x0)/lcs) * exp(-((x-x0)**2+(y-y0)**2)/(2*lcs)**2)
     ! density
     density(x) = ncs * cosh((x-x0)/lcs)**(-2) + nbg
-    ! current jz_0 > 0, while jz_1 < 0
+    ! current from Ampere's law jz = c/(4*pi)*(rot B)_z: jz_0 > 0, while jz_1 < 0
     jz(x,y)    = &
-         +     b0/(4*pi*lcs) * cosh((x-x0)/lcs)**(-2) &
-         -2*e1*b0/(4*pi*lcs) * ( 1.d0-((x-x0)**2+(y-y0)**2)/(2*lcs)**2 ) * exp(-((x-x0)**2+(y-y0)**2)/(2*lcs)**2)
+         +     c*b0/(4*pi*lcs) * cosh((x-x0)/lcs)**(-2) &
+         -2*e1*c*b0/(4*pi*lcs) * ( 1.d0-((x-x0)**2+(y-y0)**2)/(2*lcs)**2 ) * exp(-((x-x0)**2+(y-y0)**2)/(2*lcs)**2)
 
     !
     ! electromagnetic field
@@ -552,7 +558,7 @@ contains
     if( nrank == 0 ) then
        ! time, particle1, particle2, efield, bfield, total
        energy_g(nsp+3) = sum(energy_g(1:nsp+2))
-       write(unit, fmt='(f8.2, 4(1x, e12.5))') it*delt, &
+       write(unit, fmt='(f8.2, 4(1x, es12.5))') it*delt, &
             & sum(energy_g(1:nsp)), energy_g(nsp+1), energy_g(nsp+2), energy_g(nsp+3)
        close(unit)
     endif
@@ -575,7 +581,7 @@ contains
     type(json_file) :: file
     type(json_value), pointer :: root, p
 
-    call json%initialize()
+    call json%initialize(real_format = 'ES')
     call file%initialize()
     call file%deserialize(config_string)
     call file%get(root)
@@ -584,7 +590,6 @@ contains
    
     ! write data to the disk
     call io__output(up, uf, np2, nxs, nxe, it, trim(restart_file))
-    write (*,*) "Checkpoint!!!"
     if ( nrank == nroot ) then
        call json%print(root, config)
     end if
