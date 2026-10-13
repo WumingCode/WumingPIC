@@ -382,21 +382,16 @@ contains
     real(8), parameter :: e1 = 0.12d0  ! B1/B0: SZ recommend ~< O(0.5*nbg/ncs).
     real(8)            :: r1, r2
     real(8)            :: jz, density
-    real(8)            :: psi_harris, psi_pert, logcosh, psi_wall_lo, psi_wall_hi
+    real(8)            :: b_harris, psi_pert
     real(8)            :: x, y
     real(8), allocatable :: psi(:,:)
     real(8)            :: f1, f2
     real(8)            :: sdi, sde  ! for Box-Muller method
 
     ! ---------------- Utility functions ------------------
-    ! log(cosh(x)) without overflow
-    logcosh(x) = abs(x) + log(1.d0+exp(-2.d0*abs(x))) - log(2.d0)
-    ! magnetic flux function: Bx = d(psi)/dy, By = -d(psi)/dx
-    ! Harris sheet: By = b0*tanh((x-x0)/lcs)
-    psi_harris(x) = -b0*lcs * logcosh((x-x0)/lcs)
-    ! localized perturbation:
-    !   Bx = +e1*b0*((y-y0)/lcs)*exp(-r**2/(2*lcs)**2)
-    !   By = -e1*b0*((x-x0)/lcs)*exp(-r**2/(2*lcs)**2)
+    ! magnetic field strength
+    b_harris(x) = b0 * tanh((x-x0)/lcs)
+    ! localized perturbation given by the flux function: Bx = d(psi)/dy, By = -d(psi)/dx
     psi_pert(x,y) = -2*e1*b0*lcs * exp(-((x-x0)**2+(y-y0)**2)/(2*lcs)**2)
     ! density
     density(x) = ncs * cosh((x-x0)/lcs)**(-2) + nbg
@@ -408,30 +403,22 @@ contains
     !
     ! electromagnetic field
     !
-    ! The flux function psi is defined at the Ez points ((i+1/2)*delx, (j+1/2)*delx),
-    ! and Bx at ((i+1/2)*delx, j*delx) and By at (i*delx, (j+1/2)*delx) are given by
-    ! its differences, so that the discrete div B vanishes identically.
-    ! psi is periodic in y and antisymmetric about the wall value at the walls
-    ! (x = nxs*delx, nxe*delx), consistent with the conducting wall boundary condition.
-    ! The wall value is taken to be constant (Harris part only) so that Bx = 0 on the
-    ! walls and the ghost cells agree with the mirror condition in bc__dfield.
-    ! The perturbation should be negligible at the walls.
+    ! perturbation: psi at the Ez points, periodic in y and antisymmetric at the walls,
+    ! so that its differences give discrete div B = 0 consistent with the wall BC
     allocate(psi(nxs-3:nxe+2,nys-3:nye+2))
-    psi_wall_lo = psi_harris(nxs*delx)
-    psi_wall_hi = psi_harris(nxe*delx)
     !$OMP PARALLEL DO PRIVATE(i,j,x,y)
     do j=nys-3,nye+2
       y = (modulo(j-nygs,nyge-nygs+1)+nygs+0.5d0)*delx
       do i=nxs-3,nxe+2
          if( i < nxs ) then
             x = (2*nxs-1-i+0.5d0)*delx
-            psi(i,j) = 2*psi_wall_lo - psi_harris(x) - psi_pert(x,y)
+            psi(i,j) = -psi_pert(x,y)
          else if( i >= nxe ) then
             x = (2*nxe-1-i+0.5d0)*delx
-            psi(i,j) = 2*psi_wall_hi - psi_harris(x) - psi_pert(x,y)
+            psi(i,j) = -psi_pert(x,y)
          else
             x = (i+0.5d0)*delx
-            psi(i,j) = psi_harris(x) + psi_pert(x,y)
+            psi(i,j) = +psi_pert(x,y)
          endif
       enddo
     enddo
@@ -442,7 +429,7 @@ contains
     do j=nys-2,nye+2
       do i=nxs-2,nxe+2
          uf(1,i,j,k) = +(psi(i,j)-psi(i,j-1))/delx
-         uf(2,i,j,k) = -(psi(i,j)-psi(i-1,j))/delx
+         uf(2,i,j,k) = b_harris(i*delx) - (psi(i,j)-psi(i-1,j))/delx
          uf(3,i,j,k) = 0.d0
          uf(4,i,j,k) = 0.d0
          uf(5,i,j,k) = 0.d0
