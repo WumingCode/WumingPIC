@@ -371,17 +371,17 @@ contains
     real(8), parameter :: e1 = 0.12d0  ! B1/B0: SZ recommend ~< O(0.5*nbg/ncs).
     real(8)            :: r1, r2
     real(8)            :: jz, density
-    real(8)            :: b_harris, bx_pert, by_pert
+    real(8)            :: b_harris, psi_pert
     real(8)            :: x, y
+    real(8), allocatable :: psi(:,:)
     real(8)            :: f1, f2
     real(8)            :: sdi, sde  ! for Box-Muller method
 
     ! ---------------- Utility functions ------------------
     ! magnetic field strength
     b_harris(x) = b0 * tanh((x-x0)/lcs)
-    ! localized perturbation
-    bx_pert(x,y) = +e1*b0 *((y-y0)/lcs) * exp(-((x-x0)**2+(y-y0)**2)/(2*lcs)**2)
-    by_pert(x,y) = -e1*b0 *((x-x0)/lcs) * exp(-((x-x0)**2+(y-y0)**2)/(2*lcs)**2)
+    ! localized perturbation given by the flux function: Bx = d(psi)/dy, By = -d(psi)/dx
+    psi_pert(x,y) = -2*e1*b0*lcs * exp(-((x-x0)**2+(y-y0)**2)/(2*lcs)**2)
     ! density
     density(x) = ncs * cosh((x-x0)/lcs)**(-2) + nbg
     ! current from Ampere's law jz = c/(4*pi)*(rot B)_z: jz_0 > 0, while jz_1 < 0
@@ -392,13 +392,32 @@ contains
     !
     ! electromagnetic field
     !
+    ! perturbation: psi at the Ez points, periodic in y and antisymmetric at the walls,
+    ! so that its differences give discrete div B = 0 consistent with the wall BC
+    allocate(psi(nxs-3:nxe+2,nys-3:nye+2))
+    !$OMP PARALLEL DO PRIVATE(i,j,x,y)
+    do j=nys-3,nye+2
+      y = (modulo(j-nygs,nyge-nygs+1)+nygs+0.5d0)*delx
+      do i=nxs-3,nxe+2
+         if( i < nxs ) then
+            x = (2*nxs-1-i+0.5d0)*delx
+            psi(i,j) = -psi_pert(x,y)
+         else if( i >= nxe ) then
+            x = (2*nxe-1-i+0.5d0)*delx
+            psi(i,j) = -psi_pert(x,y)
+         else
+            x = (i+0.5d0)*delx
+            psi(i,j) = +psi_pert(x,y)
+         endif
+      enddo
+    enddo
+    !$OMP END PARALLEL DO
+
     !$OMP PARALLEL DO PRIVATE(i,j)
     do j=nys-2,nye+2
       do i=nxs-2,nxe+2
-         uf(1,i,j) = 0.0D0
-         uf(1,i,j) = uf(1,i,j) + bx_pert(i*delx,j*delx)
-         uf(2,i,j) = b_harris(i*delx)
-         uf(2,i,j) = uf(2,i,j) + by_pert(i*delx,j*delx)
+         uf(1,i,j) = +(psi(i,j)-psi(i,j-1))/delx
+         uf(2,i,j) = b_harris(i*delx) - (psi(i,j)-psi(i-1,j))/delx
          uf(3,i,j) = 0.d0
          uf(4,i,j) = 0.d0
          uf(5,i,j) = 0.d0
@@ -406,6 +425,7 @@ contains
       enddo
     enddo
     !$OMP END PARALLEL DO
+    deallocate(psi)
 
     ! particle position
     !
