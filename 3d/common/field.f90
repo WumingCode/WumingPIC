@@ -454,6 +454,7 @@ contains
       call MPI_ALLREDUCE(sum,sum_g,1,mnpr,opsum,ncomw,nerr)
 
       eps = sqrt(sum_g)*err
+      if(sum_g == 0d0) phi = 0d0
 
       call set_boundary_phi(phi,nxs,nxe,nys,nye,nzs,nze,l)
 
@@ -474,9 +475,14 @@ contains
 
       call MPI_ALLREDUCE(sumr,sumr_g,1,mnpr,opsum,ncomw,nerr)
 
-      if(sqrt(sumr_g) > eps)then
+      sum_g = sqrt(sumr_g)
+      if(sum_g > eps)then
 
         do while(sum_g > eps)
+          if(ite >= ite_max) then
+            write(6,*)'********** stop at cgm after ite_max **********'
+            stop
+          endif
 
           ite = ite+1
 
@@ -517,13 +523,6 @@ contains
           enddo
 !$OMP END PARALLEL DO
 
-          sum_g = sqrt(sumr_g)
-
-          if(ite >= ite_max) then
-            write(6,*)'********** stop at cgm after ite_max **********'
-            stop
-          endif
-
           sum1 = 0d0
 !$OMP PARALLEL DO PRIVATE(i,j,k) REDUCTION(+:sum1)
           do k=nzs,nze
@@ -536,6 +535,7 @@ contains
 !$OMP END PARALLEL DO
 
           call MPI_ALLREDUCE(sum1,sum1_g,1,mnpr,opsum,ncomw,nerr)
+          sum_g = sqrt(sum1_g)
           bv = sum1_g/sumr_g
 
 !$OMP PARALLEL DO PRIVATE(i,j,k)
