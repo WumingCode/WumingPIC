@@ -454,6 +454,7 @@ contains
       call MPI_ALLREDUCE(sum,sum_g,1,mnpr,opsum,ncomw,nerr)
 
       eps = sqrt(sum_g)*err
+      if(sum_g == 0d0) phi = 0d0
 
       call set_boundary_phi(phi,nxs,nxe,nys,nye,nzs,nze,l)
 
@@ -474,82 +475,78 @@ contains
 
       call MPI_ALLREDUCE(sumr,sumr_g,1,mnpr,opsum,ncomw,nerr)
 
-      if(sqrt(sumr_g) > eps)then
+      sum_g = sqrt(sumr_g)
+      do while(sum_g > eps)
+        if(ite >= ite_max) then
+          write(6,*)'********** stop at cgm after ite_max **********'
+          stop
+        endif
 
-        do while(sum_g > eps)
+        ite = ite+1
 
-          ite = ite+1
+        call set_boundary_phi(p,nxs,nxe,nys,nye,nzs,nze,l)
 
-          call set_boundary_phi(p,nxs,nxe,nys,nye,nzs,nze,l)
-
-          sumr = 0d0
-          sum2 = 0d0
+        sumr = 0d0
+        sum2 = 0d0
 !$OMP PARALLEL DO PRIVATE(i,j,k) REDUCTION(+:sumr,sum2)
-          do k=nzs,nze
-          do j=nys,nye
-          do i=nxs,nxe
-            ap(i,j,k) = -p(i,j,k-1)-p(i,j-1,k)             &
-                        -p(i-1,j,k)+f4*p(i,j,k)-p(i+1,j,k) &
-                        -p(i,j+1,k)-p(i,j,k+1)
-            sumr = sumr+r(i,j,k)*r(i,j,k)
-            sum2 = sum2+p(i,j,k)*ap(i,j,k)
-          enddo
-          enddo
-          enddo
-!$OMP END PARALLEL DO
-
-          bff_snd(1) = sumr
-          bff_snd(2) = sum2
-          call MPI_ALLREDUCE(bff_snd,bff_rcv,2,mnpr,opsum,ncomw,nerr)
-          sumr_g = bff_rcv(1)
-          sum2_g = bff_rcv(2)
-
-          av = sumr_g/sum2_g
-
-!$OMP PARALLEL DO PRIVATE(i,j,k)
-          do k=nzs,nze
-          do j=nys,nye
-          do i=nxs,nxe
-            phi(i,j,k) = phi(i,j,k)+av*p(i,j,k)
-            r(i,j,k) = r(i,j,k)-av*ap(i,j,k)
-          enddo
-          enddo
-          enddo
-!$OMP END PARALLEL DO
-
-          sum_g = sqrt(sumr_g)
-
-          if(ite >= ite_max) then
-            write(6,*)'********** stop at cgm after ite_max **********'
-            stop
-          endif
-
-          sum1 = 0d0
-!$OMP PARALLEL DO PRIVATE(i,j,k) REDUCTION(+:sum1)
-          do k=nzs,nze
-          do j=nys,nye
-          do i=nxs,nxe
-            sum1 = sum1+r(i,j,k)*r(i,j,k)
-          enddo
-          enddo
-          enddo
-!$OMP END PARALLEL DO
-
-          call MPI_ALLREDUCE(sum1,sum1_g,1,mnpr,opsum,ncomw,nerr)
-          bv = sum1_g/sumr_g
-
-!$OMP PARALLEL DO PRIVATE(i,j,k)
-          do k=nzs,nze
-          do j=nys,nye
-          do i=nxs,nxe
-            p(i,j,k) = r(i,j,k)+bv*p(i,j,k)
-          enddo
-          enddo
-          enddo
-!$OMP END PARALLEL DO
-
+        do k=nzs,nze
+        do j=nys,nye
+        do i=nxs,nxe
+          ap(i,j,k) = -p(i,j,k-1)-p(i,j-1,k)             &
+                      -p(i-1,j,k)+f4*p(i,j,k)-p(i+1,j,k) &
+                      -p(i,j+1,k)-p(i,j,k+1)
+          sumr = sumr+r(i,j,k)*r(i,j,k)
+          sum2 = sum2+p(i,j,k)*ap(i,j,k)
         enddo
-      endif
+        enddo
+        enddo
+!$OMP END PARALLEL DO
+
+        bff_snd(1) = sumr
+        bff_snd(2) = sum2
+        call MPI_ALLREDUCE(bff_snd,bff_rcv,2,mnpr,opsum,ncomw,nerr)
+        sumr_g = bff_rcv(1)
+        sum2_g = bff_rcv(2)
+
+        av = sumr_g/sum2_g
+
+!$OMP PARALLEL DO PRIVATE(i,j,k)
+        do k=nzs,nze
+        do j=nys,nye
+        do i=nxs,nxe
+          phi(i,j,k) = phi(i,j,k)+av*p(i,j,k)
+          r(i,j,k) = r(i,j,k)-av*ap(i,j,k)
+        enddo
+        enddo
+        enddo
+!$OMP END PARALLEL DO
+
+        sum1 = 0d0
+!$OMP PARALLEL DO PRIVATE(i,j,k) REDUCTION(+:sum1)
+        do k=nzs,nze
+        do j=nys,nye
+        do i=nxs,nxe
+          sum1 = sum1+r(i,j,k)*r(i,j,k)
+        enddo
+        enddo
+        enddo
+!$OMP END PARALLEL DO
+
+        call MPI_ALLREDUCE(sum1,sum1_g,1,mnpr,opsum,ncomw,nerr)
+        sum_g = sqrt(sum1_g)
+        bv = sum1_g/sumr_g
+
+!$OMP PARALLEL DO PRIVATE(i,j,k)
+        do k=nzs,nze
+        do j=nys,nye
+        do i=nxs,nxe
+          p(i,j,k) = r(i,j,k)+bv*p(i,j,k)
+        enddo
+        enddo
+        enddo
+!$OMP END PARALLEL DO
+
+      enddo
 
 !$OMP PARALLEL WORKSHARE
       db(l,nxs:nxe,nys:nye,nzs:nze) = phi(nxs:nxe,nys:nye,nzs:nze)
