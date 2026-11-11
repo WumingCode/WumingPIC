@@ -384,74 +384,71 @@ contains
        call MPI_ALLREDUCE(sumr,sumr_g,1,mnpr,opsum,ncomw,nerr)
 
        sum_g = dsqrt(sumr_g)
-       if(sum_g > eps)then
-       
-          do while(sum_g > eps)
-             if(ite >= ite_max) then
-                write(6,*)'********** stop at cgm after ite_max **********'
-                stop
-             endif
-             
-             ite = ite+1
+       do while(sum_g > eps)
+          if(ite >= ite_max) then
+             write(6,*)'********** stop at cgm after ite_max **********'
+             stop
+          endif
+          
+          ite = ite+1
 
-             !------boundary condition of p------
-             call set_boundary_phi(p,nxs,nxe,nys,nye,l)
-             !------ end of --------       
+          !------boundary condition of p------
+          call set_boundary_phi(p,nxs,nxe,nys,nye,l)
+          !------ end of --------       
 
-             sumr = 0.0D0
-             sum2 = 0.0D0
+          sumr = 0.0D0
+          sum2 = 0.0D0
 !$OMP PARALLEL DO PRIVATE(i,j) REDUCTION(+:sumr,sum2)
-             do j=nys,nye
-             do i=nxs,nxe
-                ap(i,j) = -p(i,j-1)                    &
-                          -p(i-1,j)+f4*p(i,j)-p(i+1,j) &
-                          -p(i,j+1)
-                sumr = sumr+r(i,j)*r(i,j)
-                sum2 = sum2+p(i,j)*ap(i,j)
-             enddo
-             enddo
-!$OMP END PARALLEL DO
-
-             bff_snd(1) = sumr
-             bff_snd(2) = sum2
-             call MPI_ALLREDUCE(bff_snd,bff_rcv,2,mnpr,opsum,ncomw,nerr)
-             sumr_g = bff_rcv(1)
-             sum2_g = bff_rcv(2)
-
-             av = sumr_g/sum2_g
-
-!$OMP PARALLEL DO PRIVATE(i,j)
-             do j=nys,nye
-             do i=nxs,nxe
-                phi(i,j) = phi(i,j)+av* p(i,j)
-                r(i,j) = r(i,j)-av*ap(i,j)
-             enddo
-             enddo
-!$OMP END PARALLEL DO
-             
-             sum1 = 0.0D0
-!$OMP PARALLEL DO PRIVATE(i,j) REDUCTION(+:sum1)
-             do j=nys,nye
-             do i=nxs,nxe
-                sum1 = sum1+r(i,j)*r(i,j)
-             enddo
-             enddo
-!$OMP END PARALLEL DO
-
-             call MPI_ALLREDUCE(sum1,sum1_g,1,mnpr,opsum,ncomw,nerr)
-             sum_g = dsqrt(sum1_g)
-             bv = sum1_g/sumr_g
-             
-!$OMP PARALLEL DO PRIVATE(i,j)
-             do j=nys,nye
-             do i=nxs,nxe
-                p(i,j) = r(i,j)+bv*p(i,j)
-             enddo
-             enddo
-!$OMP END PARALLEL DO
-             
+          do j=nys,nye
+          do i=nxs,nxe
+             ap(i,j) = -p(i,j-1)                    &
+                       -p(i-1,j)+f4*p(i,j)-p(i+1,j) &
+                       -p(i,j+1)
+             sumr = sumr+r(i,j)*r(i,j)
+             sum2 = sum2+p(i,j)*ap(i,j)
           enddo
-       endif
+          enddo
+!$OMP END PARALLEL DO
+
+          bff_snd(1) = sumr
+          bff_snd(2) = sum2
+          call MPI_ALLREDUCE(bff_snd,bff_rcv,2,mnpr,opsum,ncomw,nerr)
+          sumr_g = bff_rcv(1)
+          sum2_g = bff_rcv(2)
+
+          av = sumr_g/sum2_g
+
+!$OMP PARALLEL DO PRIVATE(i,j)
+          do j=nys,nye
+          do i=nxs,nxe
+             phi(i,j) = phi(i,j)+av* p(i,j)
+             r(i,j) = r(i,j)-av*ap(i,j)
+          enddo
+          enddo
+!$OMP END PARALLEL DO
+          
+          sum1 = 0.0D0
+!$OMP PARALLEL DO PRIVATE(i,j) REDUCTION(+:sum1)
+          do j=nys,nye
+          do i=nxs,nxe
+             sum1 = sum1+r(i,j)*r(i,j)
+          enddo
+          enddo
+!$OMP END PARALLEL DO
+
+          call MPI_ALLREDUCE(sum1,sum1_g,1,mnpr,opsum,ncomw,nerr)
+          sum_g = dsqrt(sum1_g)
+          bv = sum1_g/sumr_g
+          
+!$OMP PARALLEL DO PRIVATE(i,j)
+          do j=nys,nye
+          do i=nxs,nxe
+             p(i,j) = r(i,j)+bv*p(i,j)
+          enddo
+          enddo
+!$OMP END PARALLEL DO
+          
+       enddo
 
 !$OMP PARALLEL WORKSHARE
        db(l,nxs:nxe,nys:nye) = phi(nxs:nxe,nys:nye)
