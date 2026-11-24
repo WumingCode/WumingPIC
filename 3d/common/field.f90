@@ -426,13 +426,12 @@ contains
     real(8), intent(inout) :: db(6,nxgs-2:nxge+2,nys-2:nye+2,nzs-2:nze+2)
     integer, parameter :: ite_max = 100 ! maximum number of interation
     integer            :: i, j, k, l, ite
-    real(8), parameter :: err = 1d-6
-    real(8)            :: eps, sumr, sum, sum1, sum2, av, bv
-    real(8)            :: sumr_g, sum_g, sum1_g, sum2_g
+    real(8), parameter :: err2 = 1d-12
+    real(8)            :: eps2, sumr, sum, sum1, sum2, av, bv
     real(8)            :: phi(nxs-1:nxe+1,nys-1:nye+1,nzs-1:nze+1), p(nxs-1:nxe+1,nys-1:nye+1,nzs-1:nze+1)
     real(8)            :: r(nxs:nxe,nys:nye,nzs:nze), b(nxs:nxe,nys:nye,nzs:nze)
     real(8)            :: ap(nxs:nxe,nys:nye,nzs:nze)
-    real(8)            :: bff_snd(2),bff_rcv(2)
+    real(8)            :: bff(2)
 
     do l=1,3
 
@@ -451,10 +450,12 @@ contains
       enddo
 !$OMP END PARALLEL DO
 
-      call MPI_ALLREDUCE(sum,sum_g,1,mnpr,opsum,ncomw,nerr)
+      call MPI_ALLREDUCE(MPI_IN_PLACE,sum,1,mnpr,opsum,ncomw,nerr)
 
-      eps = sqrt(sum_g)*err
-      if(sum_g == 0d0) phi = 0d0
+!      eps = sqrt(sum_g)*err
+!      if(sum_g == 0d0) phi = 0d0
+      eps2 = sum*err2
+      if(sum == 0d0) phi = 0d0
 
       call set_boundary_phi(phi,nxs,nxe,nys,nye,nzs,nze,l)
 
@@ -473,10 +474,12 @@ contains
       enddo
 !$OMP END PARALLEL DO
 
-      call MPI_ALLREDUCE(sumr,sumr_g,1,mnpr,opsum,ncomw,nerr)
+      call MPI_ALLREDUCE(MPI_IN_PLACE,sumr,1,mnpr,opsum,ncomw,nerr)
 
-      sum_g = sqrt(sumr_g)
-      do while(sum_g > eps)
+!      sum_g = sqrt(sumr_g)
+!      do while(sum_g > eps)
+      sum = sumr
+      do while(sum > eps2)
         if(ite >= ite_max) then
           write(6,*)'********** stop at cgm after ite_max **********'
           stop
@@ -502,13 +505,16 @@ contains
         enddo
 !$OMP END PARALLEL DO
 
-        bff_snd(1) = sumr
-        bff_snd(2) = sum2
-        call MPI_ALLREDUCE(bff_snd,bff_rcv,2,mnpr,opsum,ncomw,nerr)
-        sumr_g = bff_rcv(1)
-        sum2_g = bff_rcv(2)
+        bff(1) = sumr
+        bff(2) = sum2
+        call MPI_ALLREDUCE(MPI_IN_PLACE,bff,2,mnpr,opsum,ncomw,nerr)
+!        sumr_g = bff_rcv(1)
+!        sum2_g = bff_rcv(2)
+        sumr = bff(1)
+        sum2 = bff(2)
 
-        av = sumr_g/sum2_g
+!        av = sumr_g/sum2_g
+        av = sumr/sum2
 
 !$OMP PARALLEL DO PRIVATE(i,j,k)
         do k=nzs,nze
@@ -532,9 +538,10 @@ contains
         enddo
 !$OMP END PARALLEL DO
 
-        call MPI_ALLREDUCE(sum1,sum1_g,1,mnpr,opsum,ncomw,nerr)
-        sum_g = sqrt(sum1_g)
-        bv = sum1_g/sumr_g
+        call MPI_ALLREDUCE(MPI_IN_PLACE,sum1,1,mnpr,opsum,ncomw,nerr)
+!        sum_g = sqrt(sum1_g)
+        sum = sum1
+        bv = sum1/sumr
 
 !$OMP PARALLEL DO PRIVATE(i,j,k)
         do k=nzs,nze
