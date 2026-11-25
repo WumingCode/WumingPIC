@@ -336,7 +336,7 @@ contains
     real(8), intent(inout) :: db(6,nxgs-2:nxge+2,nys-2:nye+2)
     integer, parameter :: ite_max = 100 ! maximum number of interation
     integer            :: i, j, l, ite
-    real(8), parameter :: err2 = 1d-12
+    real(8), parameter :: err = 1d-6 ! relative tolerance on the residual norm
     real(8)            :: eps2, sumr, sum, sum1, sum2, av, bv
     real(8)            :: phi(nxs-1:nxe+1,nys-1:nye+1), p(nxs-1:nxe+1,nys-1:nye+1)
     real(8)            :: r(nxs:nxe,nys:nye), b(nxs:nxe,nys:nye)
@@ -360,7 +360,7 @@ contains
 
        call MPI_ALLREDUCE(MPI_IN_PLACE,sum,1,mnpr,opsum,ncomw,nerr)
 
-       eps2 = sum*err2
+       eps2 = sum*err**2  ! squared threshold, compared to |r|^2
        if(sum == 0.0D0) phi = 0.0D0
 
        !------ boundary condition of phi ------

@@ -426,7 +426,7 @@ contains
     real(8), intent(inout) :: db(6,nxgs-2:nxge+2,nys-2:nye+2,nzs-2:nze+2)
     integer, parameter :: ite_max = 100 ! maximum number of interation
     integer            :: i, j, k, l, ite
-    real(8), parameter :: err2 = 1d-12
+    real(8), parameter :: err = 1d-6 ! relative tolerance on the residual norm
     real(8)            :: eps2, sumr, sum, sum1, sum2, av, bv
     real(8)            :: phi(nxs-1:nxe+1,nys-1:nye+1,nzs-1:nze+1), p(nxs-1:nxe+1,nys-1:nye+1,nzs-1:nze+1)
     real(8)            :: r(nxs:nxe,nys:nye,nzs:nze), b(nxs:nxe,nys:nye,nzs:nze)
@@ -452,7 +452,7 @@ contains
 
       call MPI_ALLREDUCE(MPI_IN_PLACE,sum,1,mnpr,opsum,ncomw,nerr)
 
-      eps2 = sum*err2
+      eps2 = sum*err**2  ! squared threshold, compared to |r|^2
       if(sum == 0d0) phi = 0d0
 
       call set_boundary_phi(phi,nxs,nxe,nys,nye,nzs,nze,l)
