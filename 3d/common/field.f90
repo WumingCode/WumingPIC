@@ -452,8 +452,6 @@ contains
 
       call MPI_ALLREDUCE(MPI_IN_PLACE,sum,1,mnpr,opsum,ncomw,nerr)
 
-!      eps = sqrt(sum_g)*err
-!      if(sum_g == 0d0) phi = 0d0
       eps2 = sum*err2
       if(sum == 0d0) phi = 0d0
 
@@ -476,8 +474,6 @@ contains
 
       call MPI_ALLREDUCE(MPI_IN_PLACE,sumr,1,mnpr,opsum,ncomw,nerr)
 
-!      sum_g = sqrt(sumr_g)
-!      do while(sum_g > eps)
       sum = sumr
       do while(sum > eps2)
         if(ite >= ite_max) then
@@ -508,12 +504,9 @@ contains
         bff(1) = sumr
         bff(2) = sum2
         call MPI_ALLREDUCE(MPI_IN_PLACE,bff,2,mnpr,opsum,ncomw,nerr)
-!        sumr_g = bff_rcv(1)
-!        sum2_g = bff_rcv(2)
         sumr = bff(1)
         sum2 = bff(2)
 
-!        av = sumr_g/sum2_g
         av = sumr/sum2
 
 !$OMP PARALLEL DO PRIVATE(i,j,k)
@@ -539,7 +532,6 @@ contains
 !$OMP END PARALLEL DO
 
         call MPI_ALLREDUCE(MPI_IN_PLACE,sum1,1,mnpr,opsum,ncomw,nerr)
-!        sum_g = sqrt(sum1_g)
         sum = sum1
         bv = sum1/sumr
 
